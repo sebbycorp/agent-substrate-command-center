@@ -111,6 +111,23 @@ class RoomLogicTests(unittest.TestCase):
         self.assertAlmostEqual(snap["metrics"]["density"], 30.0, places=0)
         self.assertEqual(snap["metrics"]["units"], 8)
 
+    def test_work_without_ids_does_not_empty_show30_vault(self):
+        server.host_action("flip")
+        server.host_action("show30")
+        before = len(server.snaps())
+        self.assertGreater(before, 200)
+        server.host_action("work")
+        self.assertGreaterEqual(len(server.snaps()), 200)
+        self.assertEqual(len(server.active()), 8)
+
+    def test_idle_without_ids_only_parks_field_units(self):
+        a = server.add_agent("Ada", "phone")
+        server.host_action("flip")
+        server.me_action(a["id"], "work")
+        self.assertEqual(server.find(a["id"])["status"], "active")
+        server.host_action("idle")
+        self.assertEqual(server.find(a["id"])["status"], "checkpointed")
+
     def test_snapshot_shape(self):
         server.add_agent("Ada", "phone")
         snap = server.snapshot(server.STATE["mode"])
@@ -222,6 +239,7 @@ class SurfaceContractTests(unittest.TestCase):
         self.assertIn("Go to sleep", text)
         self.assertIn("/api/state", text)
         self.assertIn("/api/me", text)
+        self.assertIn("Jack in again", text)
 
     def test_hud_can_follow_room_state(self):
         text = ROOT.joinpath("index.html").read_text(encoding="utf-8")
@@ -229,6 +247,7 @@ class SurfaceContractTests(unittest.TestCase):
         self.assertIn("/api/host", text)
         self.assertIn("Pete live-join is not this file", text)
         self.assertIn('overlay").classList.add("hide")', text)
+        self.assertIn("queued", text)
 
     def test_rts_room_copy_is_projector_legible(self):
         text = ROOT.joinpath("rts.html").read_text(encoding="utf-8")

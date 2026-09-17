@@ -231,7 +231,7 @@ body.shake main{animation:shake .35s linear}
 const NODES=4,SLOTS=6,CAP=NODES*SLOTS,WORKERS=8,RATE=.12;
 const S={mode:"classic",tick:0,seq:0,queue:0,agents:[]};
 const $=id=>document.getElementById(id);
-const live=()=>S.agents.filter(a=>a.status!=="checkpointed");
+const live=()=>S.agents.filter(a=>a.status!=="checkpointed"&&a.status!=="queued");
 const act=()=>S.agents.filter(a=>a.status==="active");
 const idle=()=>S.agents.filter(a=>a.status==="idle");
 const snaps=()=>S.agents.filter(a=>a.status==="checkpointed");
@@ -279,13 +279,14 @@ function render(){
       sb.appendChild(c);
     }
   }
-  const ag=S.agents.length, units=S.mode==="classic"?live().length:WORKERS, run=act().length;
-  const density=S.mode==="classic"?1:(ag/WORKERS||0);
-  const cpu=ag?Math.max(6,Math.min(86,(run/Math.max(units,1))*52+run)):0;
-  const head=S.mode==="classic"&&ag?(idle().length/Math.max(live().length,1))*100:0;
-  const ceil=S.mode==="classic"?(live().length/CAP)*100:(run/WORKERS)*100;
-  const cost=S.mode==="classic"?live().length*RATE:WORKERS*RATE+snaps().length*.003;
-  $("mA").textContent=ag;$("mU").textContent=units;$("mD").textContent=density.toFixed(1)+"×";$("mQ").textContent=S.queue;
+  const m=S.metrics;
+  const ag=m?m.agents:S.agents.length, units=m?m.units:(S.mode==="classic"?live().length:WORKERS), run=act().length;
+  const density=m?m.density:(S.mode==="classic"?1:(ag/WORKERS||0));
+  const cpu=m?m.cpu:(ag?Math.max(6,Math.min(86,(run/Math.max(units,1))*52+run)):0);
+  const head=m?m.headroom:(S.mode==="classic"&&ag?(idle().length/Math.max(live().length,1))*100:0);
+  const ceil=m?m.ceiling:(S.mode==="classic"?(live().length/CAP)*100:(run/WORKERS)*100);
+  const cost=m?m.cost:(S.mode==="classic"?live().length*RATE:WORKERS*RATE+snaps().length*.003);
+  $("mA").textContent=ag;$("mU").textContent=units;$("mD").textContent=Number(density).toFixed(1)+"×";$("mQ").textContent=S.queue;
   $("mC").textContent=Math.round(cpu)+"%";$("m$").textContent="$"+cost.toFixed(2);
   $("pF").style.width=cpu+"%";$("hF").style.width=Math.min(100,head)+"%";$("cF").style.width=Math.min(100,ceil)+"%";
   $("note").textContent=S.mode==="classic"?"Idle still owns a pod — density stuck at 1×.":"30× means more agents per worker by sleeping idle ones — not cheaper tokens.";
@@ -343,7 +344,7 @@ function x30(){
 function reset(){clearInterval(S.tick);Object.assign(S,{mode:"classic",tick:0,seq:0,queue:0,agents:[]});$("lane").innerHTML="";$("log").innerHTML="";phase();gw("Aperture closed.");log("RESET");render()}
 const ROOM=location.protocol!=="file:";
 function applySnap(s){
-  S.mode=s.mode; S.agents=s.agents||[]; S.queue=s.queue||0;
+  S.mode=s.mode; S.agents=s.agents||[]; S.queue=s.queue||0; S.metrics=s.metrics||null;
   phase(); render();
 }
 async function host(action){

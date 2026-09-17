@@ -20,7 +20,7 @@ canvas{width:100%;height:100%;display:block}
 #advisor{
   position:absolute;left:50%;top:10px;transform:translateX(-50%);
   background:rgba(20,12,6,.86);border:1px solid var(--gold);padding:6px 14px;font-size:13px;
-  pointer-events:none;min-width:280px;text-align:center;letter-spacing:.04em;
+  pointer-events:auto;cursor:pointer;min-width:280px;text-align:center;letter-spacing:.04em;
 }
 #queuebar{
   position:absolute;left:12px;bottom:10px;right:12px;
@@ -143,7 +143,9 @@ let sel=new Set(), drag=null, groups={}, lastHot="";
 function $(id){return document.getElementById(id)}
 function say(t){$("advisor").textContent=t}
 function paintQR(url){
-  joinUrl=url||"";
+  url=url||"";
+  if(url===joinUrl && (url?$("qrimg").src:$("qrimg").style.display==="none")) return;
+  joinUrl=url;
   $("joinurl").textContent=url||"Room mode: python3 server.py — then scan this rail.";
   if(url){
     $("qrimg").style.display="block";
@@ -271,6 +273,7 @@ async function host(action, extra){
     const body=Object.assign({action}, extra||{});
     const s=await fetch("/api/host",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
     applySnap(s);
+    if(action==="raid") raid(16);
     if(action==="reset"){raids.length=0;sel.clear()}
     coachBeat(action);
     return;
@@ -280,7 +283,7 @@ async function host(action, extra){
   if(action==="wave1") for(let i=0;i<12;i++) localAgent();
   if(action==="work"){
     const pick=selected();
-    (pick.length?pick:units.filter(u=>u.status==="idle"||u.status==="checkpointed")).forEach(u=>{
+    (pick.length?pick:units.filter(u=>u.status==="idle")).forEach(u=>{
       if(mode==="substrate"&&u.status==="checkpointed"){
         if(field().length>=WORKERS){const v=units.find(x=>x.status==="active"); if(v){v.status="checkpointed";v.place="vault";v.node=-1}}
         u.status="active"; u.place="field"; park(u);
@@ -409,6 +412,7 @@ $("recall").onclick=()=>host("recall", selectedIds().length?{ids:selectedIds()}:
 $("x30").onclick=()=>host("show30");
 $("reset").onclick=()=>host("reset");
 $("enter").onclick=()=>{$("brief").classList.add("hide"); say("Add agents, sleep them, then attack idle.");};
+$("advisor").onclick=()=>$("brief").classList.remove("hide");
 window.onkeydown=e=>{
   const k=e.key.toLowerCase();
   if(k==="a") host("train");
