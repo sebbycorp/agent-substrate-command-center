@@ -55,14 +55,36 @@ def snaps():
     return [a for a in STATE["agents"] if a["status"] == "checkpointed"]
 
 
-def next_classic_node():
-    used = len(live())
+def place_of(status):
+    if status == "checkpointed":
+        return "vault"
+    if status == "queued":
+        return "queue"
+    return "field"
+
+
+def sync_place(agent):
+    agent["place"] = place_of(agent["status"])
+    return agent
+
+
+def sync_all():
+    for a in STATE["agents"]:
+        sync_place(a)
+
+
+def occupants(agent=None):
+    return [a for a in live() if a is not agent]
+
+
+def next_classic_node(agent=None):
+    used = len(occupants(agent))
     return min(used // SLOTS, NODES - 1)
 
 
-def next_worker_node():
+def next_worker_node(agent=None):
     counts = [0] * NODES
-    for a in live():
+    for a in occupants(agent):
         if 0 <= a["node"] < NODES:
             counts[a["node"]] += 1
     return counts.index(min(counts))
@@ -70,26 +92,30 @@ def next_worker_node():
 
 def admit_agent(agent):
     if STATE["mode"] == "classic":
-        if len(live()) >= CAP:
+        if len(occupants(agent)) >= CAP:
             agent["status"] = "queued"
             agent["node"] = -1
+            sync_place(agent)
             STATE["queue"] = sum(1 for a in STATE["agents"] if a["status"] == "queued")
             return
         agent["status"] = "active"
-        agent["node"] = next_classic_node()
+        agent["node"] = next_classic_node(agent)
     else:
-        if len(live()) >= WORKERS:
+        if len(occupants(agent)) >= WORKERS:
             parked = idle()
             if parked:
                 parked[0]["status"] = "checkpointed"
                 parked[0]["node"] = -1
+                sync_place(parked[0])
             else:
                 agent["status"] = "queued"
                 agent["node"] = -1
+                sync_place(agent)
                 STATE["queue"] = sum(1 for a in STATE["agents"] if a["status"] == "queued")
                 return
         agent["status"] = "active"
-        agent["node"] = next_worker_node()
+        agent["node"] = next_worker_node(agent)
+    sync_place(agent)
     STATE["queue"] = sum(1 for a in STATE["agents"] if a["status"] == "queued")
 
 
@@ -111,6 +137,7 @@ def add_agent(name, source):
         "source": source,
         "status": "active",
         "node": 0,
+        "place": "field",
     }
     STATE["agents"].append(agent)
     admit_agent(agent)
@@ -125,6 +152,7 @@ def find(aid):
 
 
 def snapshot(s):
+    sync_all()
     ag = STATE["agents"]
     units = len(live()) if s == "classic" else WORKERS
     run = len(active())
@@ -156,11 +184,25 @@ def snapshot(s):
     }
 
 
-def host_action(action):
+def host_action(action, ids=None):
+    ids = [i for i in (ids or []) if i]
     if action in ("wave1", "wave2", "wave3"):
         n = {"wave1": 12, "wave2": 24, "wave3": 48}[action]
         for _ in range(n):
             add_agent("", "sim")
+    elif action == "train":
+        add_agent("", "sim")
+    elif action == "raid":
+        for _ in range(6):
+            add_agent("", "sim")
+    elif action in ("work", "idle", "recall"):
+        verb = "work" if action == "work" else "idle"
+        targets = [find(i) for i in ids]
+        targets = [t for t in targets if t]
+        if not targets:
+            targets = list(STATE["agents"])
+        for a in targets:
+            me_action(a["id"], verb)
     elif action == "flip":
         if STATE["mode"] == "classic":
             STATE["mode"] = "substrate"
@@ -168,6 +210,7 @@ def host_action(action):
                 if a["status"] == "compromised":
                     a["status"] = "idle"
                 if a["status"] == "queued":
+                    sync_place(a)
                     continue
                 if i < WORKERS and a["status"] == "active":
                     a["node"] = i % NODES
@@ -175,6 +218,7 @@ def host_action(action):
                 else:
                     a["status"] = "checkpointed"
                     a["node"] = -1
+                sync_place(a)
             drain_queue()
         else:
             STATE["mode"] = "classic"
@@ -188,12 +232,14 @@ def host_action(action):
                     a["status"] = "queued"
                     a["node"] = -1
                     keep.append(a)
+                sync_place(a)
             STATE["agents"] = keep
             drain_queue()
     elif action == "probe":
         if STATE["mode"] == "classic":
             for a in idle():
                 a["status"] = "compromised"
+                sync_place(a)
         # substrate: no process change for snapshots
     elif action == "reset":
         STATE.update({"mode": "classic", "seq": 0, "queue": 0, "agents": []})
@@ -209,10 +255,13 @@ def host_action(action):
                 "source": "sim",
                 "status": "checkpointed",
                 "node": -1,
+                "place": "vault",
             })
         for w, a in enumerate(STATE["agents"][:WORKERS]):
             a["status"] = "active"
             a["node"] = w % NODES
+            sync_place(a)
+    sync_all()
 
 
 def me_action(aid, action):
@@ -240,6 +289,7 @@ def me_action(aid, action):
             a["status"] = "checkpointed"
             a["node"] = -1
             drain_queue()
+    sync_place(a)
     return a
 
 
@@ -269,7 +319,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, json.dumps(snapshot(STATE["mode"])))
             return
         mapping = {
-            "/": "index.html",
+            "/": "rts.html",
+            "/rts": "rts.html",
+            "/rts.html": "rts.html",
+            "/hud": "index.html",
             "/index.html": "index.html",
             "/join": "join.html",
             "/join.html": "join.html",
@@ -298,7 +351,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, json.dumps({"ok": True, "agent": agent, "mode": STATE["mode"]}))
                 return
             if path == "/api/host":
-                host_action(str(payload.get("action") or ""))
+                host_action(str(payload.get("action") or ""), payload.get("ids") or [])
                 self._send(200, json.dumps({"ok": True, **snapshot(STATE["mode"])}))
                 return
         self._send(404, json.dumps({"ok": False}))
@@ -308,9 +361,10 @@ def main():
     httpd = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     print("=" * 60)
     print("SUBSTRATE COMMAND  //  room server")
-    print(f"Projector : {DISPLAY_URL}")
+    print(f"Field     : {DISPLAY_URL}")
+    print(f"HUD       : http://{HOST_IP}:{PORT}/hud")
     print(f"Phones    : {JOIN_URL}")
-    print("Same Wi-Fi. Ctrl+C to stop.")
+    print("Same Wi-Fi. Guest isolation needs a hotspot. Ctrl+C to stop.")
     print("=" * 60)
     httpd.serve_forever()
 

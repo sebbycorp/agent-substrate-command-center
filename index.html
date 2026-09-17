@@ -229,7 +229,7 @@ body.shake main{animation:shake .35s linear}
     <button class="btn" id="room">Room</button>
     <button class="btn" id="x30">Show 30×</button>
     <button class="btn dim" id="rst">Reset</button>
-    <div class="fine">Same 4 nodes. Flip is the runtime. QR is Pete. This is the room screen.</div>
+    <div class="fine">Same 4 nodes. Flip is the runtime. Pete live-join is not this file. Field is /.</div>
   </footer>
 </div>
 <script>
@@ -261,7 +261,7 @@ function render(){
     const rack=document.createElement("div");rack.className="rack";
     rack.innerHTML=`<div class="rh"><span>NODE-${n}</span><span>${S.mode==="classic"?here.length+"/"+SLOTS+" PODS":here.length+" LIVE / 2 WORKERS"}</span></div>`;
     const sl=document.createElement("div");sl.className="slots";
-    here.forEach(a=>{const c=document.createElement("div");c.className="cell "+a.status;c.innerHTML=`<b>${a.id}</b><span>${a.status}</span>`;sl.appendChild(c)});
+    here.forEach(a=>{const c=document.createElement("div");c.className="cell "+a.status;c.innerHTML=`<b>${(a.name||a.id).toString().slice(0,8)}</b><span>${a.status==="compromised"?"PWNED":a.status}</span>`;sl.appendChild(c)});
     if(S.mode==="classic"){for(let i=0;i<SLOTS-here.length;i++){const c=document.createElement("div");c.className="cell";c.innerHTML="<b>--</b><span>empty</span>";sl.appendChild(c)}}
     else if(!here.length){const c=document.createElement("div");c.className="cell warm";c.innerHTML="<b>gVisor</b><span>warm</span>";sl.appendChild(c)}
     rack.appendChild(sl);root.appendChild(rack);
@@ -329,10 +329,35 @@ function x30(){
   log("30x // 240 actors / 8 workers. Suspend oversubscription. SIM.");gw("POOL holding 240 logical agents");flash();render();
 }
 function reset(){clearInterval(S.tick);Object.assign(S,{mode:"classic",tick:0,seq:0,queue:0,agents:[]});$("lane").innerHTML="";$("log").innerHTML="";phase();gw("Aperture closed.");log("RESET");render()}
+const ROOM=location.protocol!=="file:";
+function applySnap(s){
+  S.mode=s.mode; S.agents=s.agents||[]; S.queue=s.queue||0;
+  phase(); render();
+}
+async function host(action){
+  const s=await fetch("/api/host",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action})}).then(r=>r.json());
+  applySnap(s);
+  if(action==="probe") log(S.mode==="classic"?"PROBE // idle pods PWNED":"PROBE // snapshots have no process");
+  if(action==="flip") log(S.mode==="substrate"?"FLIP // WorkerPool=8":"FLIP // barracks");
+  if(action==="show30") log("30x // 240 actors / 8 workers. SIM.");
+  if(action==="reset"){$("lane").innerHTML=""; log("RESET")}
+}
+async function pull(){
+  if(!ROOM) return;
+  const s=await fetch("/api/state").then(r=>r.json());
+  applySnap(s);
+}
 $("btnEnter").onclick=()=>{$("overlay").classList.add("hide");beep(440,.08)};
-$("w1").onclick=()=>wave(12,"01");$("w2").onclick=()=>wave(24,"02");$("w3").onclick=()=>wave(48,"03");
-$("flip").onclick=flip;$("atk").onclick=attack;$("room").onclick=room;$("x30").onclick=x30;$("rst").onclick=reset;
-phase();log("ONLINE // sim only");render();
+$("w1").onclick=()=>ROOM?host("wave1"):wave(12,"01");
+$("w2").onclick=()=>ROOM?host("wave2"):wave(24,"02");
+$("w3").onclick=()=>ROOM?host("wave3"):wave(48,"03");
+$("flip").onclick=()=>ROOM?host("flip"):flip();
+$("atk").onclick=()=>ROOM?host("probe"):attack();
+$("room").onclick=()=>{ if(ROOM) location.href="/"; else log("ROOM // python3 server.py then open /"); };
+$("x30").onclick=()=>ROOM?host("show30"):x30();
+$("rst").onclick=()=>ROOM?host("reset"):reset();
+phase();log(ROOM?"ROOM // shared state with the field":"ONLINE // sim only");render();
+if(ROOM){ pull(); setInterval(pull,400); }
 </script>
 </body>
 </html>
