@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Join the fleet</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root{--teal:#3cf0d0;--amber:#ffbf47;--red:#ff3d5a;--ink:#e8fbff;--dim:#7f97a6}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#05070b;color:var(--ink);font-family:"Share Tech Mono",monospace}
+body{padding:22px 18px 32px;background:radial-gradient(800px 400px at 50% -10%,rgba(60,240,208,.18),transparent 50%),#05070b}
+h1{font-family:Orbitron,sans-serif;letter-spacing:.16em;font-size:18px;margin:0 0 8px}
+.kicker{color:var(--teal);letter-spacing:.2em;font-size:11px;margin-bottom:18px}
+input,button{font:inherit;width:100%}
+input{background:#0b121a;border:1px solid rgba(60,240,208,.35);color:var(--ink);padding:14px;margin:8px 0 14px}
+button{border:1px solid var(--teal);background:rgba(60,240,208,.08);color:var(--teal);padding:16px;letter-spacing:.14em;text-transform:uppercase;margin:6px 0}
+button.primary{background:var(--teal);color:#041614;font-family:Orbitron,sans-serif;font-weight:700}
+button.hot{border-color:var(--amber);color:var(--amber)}
+.hero{border:1px solid rgba(60,240,208,.3);padding:22px 16px;margin:10px 0 16px;text-align:center;background:rgba(0,0,0,.35)}
+.hero b{display:block;font-family:Orbitron,sans-serif;font-size:26px;letter-spacing:.08em;margin:8px 0}
+.hero.idle{border-color:var(--amber);color:var(--amber)}
+.hero.compromised{border-color:var(--red);color:var(--red)}
+.hero.checkpointed{border-style:dashed;color:var(--dim)}
+.hero.active{box-shadow:0 0 24px rgba(60,240,208,.2)}
+.msg{color:var(--dim);font-size:13px;line-height:1.45;min-height:3.2em}
+</style>
+</head>
+<body>
+<div class="kicker">SUBSTRATE // HANDSET</div>
+<h1>YOU ARE THE AGENT.</h1>
+<div id="gate">
+  <div class="msg">Your session becomes a cell on the big screen. Same Wi-Fi as the projector.</div>
+  <input id="name" placeholder="your name" maxlength="18"/>
+  <button class="primary" id="go">Jack in</button>
+</div>
+<div id="pad" style="display:none">
+  <div class="hero active" id="hero"><div>IDENTITY</div><b id="hid">-</b><div id="hstat">joining</div></div>
+  <div class="msg" id="copy">Awaiting assignment.</div>
+  <button class="primary" id="work">Wake / do work</button>
+  <button class="hot" id="idle">Rest / go idle</button>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let me=null, mode="classic";
+function paint(agent, m){
+  if(!agent) return;
+  me=agent; mode=m||mode;
+  $("hid").textContent=agent.name+" / "+agent.id;
+  $("hstat").textContent=agent.status.toUpperCase()+(agent.node>=0?" / NODE-"+agent.node:"");
+  $("hero").className="hero "+agent.status;
+  const lines={
+    classic:{
+      active:"You are a resident process. Identity is glued to this pod.",
+      idle:"You are idle and still running. This is the attack surface.",
+      queued:"No free pod. You wait because identity cannot leave the machine.",
+      compromised:"Probe hit you. The process was still there."
+    },
+    substrate:{
+      active:"Restored onto a warm gVisor worker. agentgateway allowed you in.",
+      idle:"Idle on a worker. Rest to checkpoint and free the slot.",
+      queued:"Worker pool busy. Waiting.",
+      checkpointed:"You are a snapshot. No process. Nothing to compromise."
+    }
+  };
+  $("copy").textContent=((lines[mode]||lines.classic)[agent.status])||"";
+}
+async function pull(){
+  if(!me) return;
+  const s=await fetch("/api/state").then(r=>r.json());
+  paint(s.agents.find(a=>a.id===me.id), s.mode);
+}
+$("go").onclick=async()=>{
+  const name=$("name").value.trim()||("op-"+Math.floor(Math.random()*90+10));
+  const res=await fetch("/api/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})}).then(r=>r.json());
+  $("gate").style.display="none"; $("pad").style.display="block";
+  paint(res.agent,res.mode);
+  setInterval(pull,500);
+};
+async function act(action){
+  const res=await fetch("/api/me",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:me.id,action})}).then(r=>r.json());
+  paint(res.agent,res.mode);
+}
+$("work").onclick=()=>act("work");
+$("idle").onclick=()=>act("idle");
+</script>
+</body>
+</html>
