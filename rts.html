@@ -29,7 +29,7 @@ canvas{width:100%;height:100%;display:block}
 }
 #queuebar i{display:block;height:6px;background:var(--gold);margin-left:auto;min-width:0}
 #console{
-  display:grid;grid-template-columns:170px 128px 1fr 250px;background:#16100a;
+  display:grid;grid-template-columns:170px 128px 1fr 320px;background:#16100a;
   border-top:3px solid #6a5428;gap:8px;padding:8px;
 }
 #rail{display:flex;flex-direction:column;min-width:0}
@@ -40,9 +40,9 @@ canvas{width:100%;height:100%;display:block}
 .wire{border:1px solid var(--gold);display:grid;place-items:center;font-family:Orbitron,sans-serif;color:var(--gold);font-size:11px}
 #cmds{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 #cmds button{
-  height:52px;background:#2a1e10;border:1px solid #7a6230;color:var(--gold);
-  font:10px/1.2 "Share Tech Mono",monospace;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
-  white-space:normal;padding:4px 6px;
+  height:54px;background:#2a1e10;border:1px solid #7a6230;color:var(--gold);
+  font:11px/1.2 "Share Tech Mono",monospace;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;
+  white-space:normal;padding:5px 6px;
 }
 #cmds button:hover{background:#3a2a14}
 #cmds button.hot{border-color:var(--teal);color:var(--teal)}
@@ -176,8 +176,9 @@ function hot(id){lastHot=id; document.querySelectorAll("#cmds button").forEach(b
 function paintPortrait(){
   const s=selected()[0];
   $("wire").textContent=s?s.name:"NO UNIT";
-  $("uname").textContent=s? (mode==="classic"?"HARNESS AGENT · OWN POD":"ACTOR · SHARED WORKER"):"—";
-  $("ustat").textContent=s? (s.status.toUpperCase()+" · "+(s.source==="phone"?"PHONE":"SIM")+" · "+(mode==="classic"?"owns a pod":"only while awake")):"Select units. Drag LMB. RMB move.";
+  $("uname").textContent=s? (mode==="classic"?"AGENT · OWN POD":"AGENT · SHARED WORKER"):"—";
+  const tag=s?(s.status==="compromised"?"PWNED":s.status==="checkpointed"?"SNAPSHOT":s.status.toUpperCase()):"";
+  $("ustat").textContent=s? (tag+" · "+(s.source==="phone"?"PHONE":"SIM")+" · "+(mode==="classic"?"owns a pod":"only while awake")):"Select units. Drag LMB. RMB move.";
   $("uhp").textContent=s? ("HP "+s.hp+"/40"):"";
 }
 function paintHud(){
@@ -223,7 +224,7 @@ function applySnap(s){
   paintPortrait();
   paintHud();
 }
-function coachBeat(action){
+function coachBeat(action, probeHits){
   if(action==="train"||action==="raid"||action==="wave1"){
     if(mode==="classic" && queue) say("You must construct additional pods.");
     else if(mode==="classic") say("Idle agents still own a pod — that's the waste.");
@@ -232,7 +233,7 @@ function coachBeat(action){
   }
   if(action==="probe"){
     if(mode==="classic"){
-      const hits=units.filter(u=>u.status==="compromised").length;
+      const hits=probeHits==null?units.filter(u=>u.status==="compromised").length:probeHits;
       say(hits?"PWNED — the process was still running.":"Nothing idle to attack.");
     } else say("Miss — nothing running to attack.");
     return;
@@ -266,9 +267,10 @@ async function host(action, extra){
   if(LIVE){
     const body=Object.assign({action}, extra||{});
     const s=await fetch("/api/host",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
+    const beforePwn=units.filter(u=>u.status==="compromised").length;
     applySnap(s);
     if(action==="reset"){raids.length=0;sel.clear()}
-    coachBeat(action);
+    coachBeat(action, action==="probe"?units.filter(u=>u.status==="compromised").length-beforePwn:undefined);
     return;
   }
   if(action==="train") localAgent();
@@ -292,9 +294,11 @@ async function host(action, extra){
     });
     sel.clear();
   }
+  let probeHits;
   if(action==="probe"){
+    probeHits=0;
     if(mode==="classic"){
-      units.forEach(u=>{if(u.place==="field"&&u.status==="idle"){u.status="compromised";u.hp=0}});
+      units.forEach(u=>{if(u.place==="field"&&u.status==="idle"){u.status="compromised";u.hp=0;probeHits++}});
     }
   }
   if(action==="flip"){
@@ -319,7 +323,7 @@ async function host(action, extra){
     units.slice(0,WORKERS).forEach((u,i)=>{u.place="field";u.status="active";u.node=i%NODES;park(u)});
   }
   if(action==="reset"){units.length=0;raids.length=0;sel.clear();mode="classic";seq=0;queue=0;metrics={}}
-  coachBeat(action);
+  coachBeat(action, probeHits);
   paintPortrait(); paintHud();
 }
 function raid(n){const w=canvas.width/devicePixelRatio; for(let i=0;i<n;i++) raids.push({x:40+Math.random()*(w-80),y:-12-i*14,vy:1.2,alive:true})}
@@ -428,7 +432,7 @@ loop(); paintPortrait(); paintHud();
 (async()=>{
   try{
     const s=await fetch("/api/state").then(r=>r.json());
-    if(s && s.agents){ LIVE=true; applySnap(s); $("brief").classList.add("hide"); setInterval(pull,400); say("Room live. Scan the QR — same Wi‑Fi as the projector."); }
+    if(s && s.agents){ LIVE=true; applySnap(s); setInterval(pull,400); }
   }catch(e){ paintQR(""); }
 })();
 </script>

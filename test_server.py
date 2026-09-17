@@ -256,6 +256,9 @@ class SurfaceContractTests(unittest.TestCase):
         self.assertNotIn("Cast AI", text)
         self.assertNotIn("TERRAN / CLASSIC K8S", text)
         self.assertNotIn("ZERG / AGENT SUBSTRATE", text)
+        boot = text[text.find("if(s && s.agents)"):text.find("}catch")]
+        self.assertIn("LIVE=true", boot)
+        self.assertNotIn('brief").classList.add("hide")', boot)
 
     def test_hud_keeps_shortened_paas_stats(self):
         text = ROOT.joinpath("index.html").read_text(encoding="utf-8")
