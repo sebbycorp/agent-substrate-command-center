@@ -46,20 +46,21 @@ function paint(agent, m){
   if(!agent) return;
   me=agent; mode=m||mode;
   $("hid").textContent=agent.name+" / "+agent.id;
-  $("hstat").textContent=agent.status.toUpperCase()+(agent.node>=0?" / NODE-"+agent.node:"");
+  const tag=agent.status==="compromised"?"PWNED":agent.status==="checkpointed"?"SNAPSHOT":agent.status.toUpperCase();
+  $("hstat").textContent=tag+(agent.node>=0?" / NODE-"+agent.node:"");
   $("hero").className="hero "+agent.status;
   const lines={
     classic:{
       active:"You are a resident process. Identity is glued to this pod.",
       idle:"You are idle and still running. This is the attack surface.",
       queued:"No free pod. You wait because identity cannot leave the machine.",
-      compromised:"Probe hit you. The process was still there."
+      compromised:"PWNED. Probe hit you. The process was still there."
     },
     substrate:{
       active:"Restored onto a warm gVisor worker. agentgateway allowed you in.",
       idle:"Idle on a worker. Rest to checkpoint and free the slot.",
       queued:"Worker pool busy. Waiting.",
-      checkpointed:"You are a snapshot. No process. Nothing to compromise."
+      checkpointed:"SNAPSHOT. You are a snapshot. No process. Nothing to compromise."
     }
   };
   $("copy").textContent=((lines[mode]||lines.classic)[agent.status])||"";

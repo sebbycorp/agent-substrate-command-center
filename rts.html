@@ -9,7 +9,7 @@
 :root{--teal:#3dffc0;--gold:#e4c066;--red:#ff5a4e;--panel:#1a140c;--ink:#f3e6c4;--dim:#9a8660}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:"Share Tech Mono",monospace;overflow:hidden}
-body{display:grid;grid-template-rows:36px 1fr 168px}
+body{display:grid;grid-template-rows:36px 1fr 188px}
 #top{
   display:flex;align-items:center;justify-content:space-between;padding:0 12px;
   background:linear-gradient(#2a2214,#120e08);border-bottom:2px solid #5a4a28;color:var(--gold);
@@ -22,11 +22,18 @@ canvas{width:100%;height:100%;display:block}
   background:rgba(20,12,6,.86);border:1px solid var(--gold);padding:6px 14px;font-size:13px;
   pointer-events:none;min-width:280px;text-align:center;letter-spacing:.04em;
 }
+#queuebar{
+  position:absolute;left:12px;bottom:10px;right:12px;
+  height:18px;border:1px solid #5a4a28;background:#120e08;display:flex;align-items:center;
+  font-size:11px;color:var(--gold);padding:0 8px;
+}
+#queuebar i{display:block;height:6px;background:var(--gold);margin-left:auto;min-width:0}
 #console{
-  display:grid;grid-template-columns:170px 1fr 250px;background:#16100a;
+  display:grid;grid-template-columns:170px 128px 1fr 250px;background:#16100a;
   border-top:3px solid #6a5428;gap:8px;padding:8px;
 }
-#mini{background:#0b0a07;border:2px solid #5a4a28}
+#rail{display:flex;flex-direction:column;min-width:0}
+#mini{background:#0b0a07;border:2px solid #5a4a28;width:100%;height:118px}
 #portrait{
   display:grid;grid-template-columns:92px 1fr;gap:8px;border:2px solid #5a4a28;background:#22180e;padding:8px;
 }
@@ -39,21 +46,63 @@ canvas{width:100%;height:100%;display:block}
 #cmds button:hover{background:#3a2a14}
 #cmds button.hot{border-color:var(--teal);color:var(--teal)}
 #cmds button.bad{border-color:var(--red);color:var(--red)}
+#cmds button.sel{box-shadow:inset 0 0 0 1px var(--teal)}
 #stats{font-size:11px;color:var(--dim)}
 #stats b{color:var(--ink)}
+#qrbox{
+  margin-top:6px;border:2px solid #5a4a28;background:#0b0a07;padding:6px;min-height:0;
+  display:flex;flex-direction:column;gap:4px;
+}
+#qrimg{width:110px;height:110px;background:#fff;display:none;align-self:center}
+#joinurl{font-size:9px;color:var(--gold);word-break:break-all;line-height:1.35}
+#pete{font-size:8px;color:var(--dim);letter-spacing:.04em}
+.overlay{position:fixed;inset:0;background:rgba(2,4,8,.92);display:flex;align-items:center;justify-content:center;z-index:20;padding:22px}
+.overlay.hide{display:none}
+.sheet{width:min(860px,100%);max-height:92vh;overflow:auto;border:2px solid var(--gold);background:#120e08;padding:22px}
+.sheet h1{font-family:Orbitron,sans-serif;font-size:20px;letter-spacing:.08em;margin:8px 0 12px;color:#fff8d6}
+.sheet p,.sheet td{color:var(--dim);line-height:1.45;font-size:13px}
+.sheet table{width:100%;border-collapse:collapse;margin:10px 0}
+.sheet th,.sheet td{border:1px solid #5a4a28;padding:6px;text-align:left}
+.sheet .go{height:40px;width:220px;background:var(--gold);color:#120e08;border:0;font-family:Orbitron,sans-serif;letter-spacing:.08em;cursor:pointer}
+.kicker{color:var(--gold);letter-spacing:.2em;font-size:11px}
 </style>
 </head>
 <body>
+<div class="overlay" id="brief">
+  <div class="sheet">
+    <div class="kicker">BRIEFING // OPERATION SUBSTRATE · SIM</div>
+    <h1>RUN HARNESS AGENTS ON THE CLUSTER YOU ALREADY PAY FOR.</h1>
+    <p>Harness agents are not stateless microservices. Kubernetes glued identity, resources, and lifecycle to the pod. Agent Substrate is how kagent runs that class on Kubernetes you already have — actor off the pod, warm workers, checkpoint when idle — instead of a cloud agent PaaS.</p>
+    <p>PaaS path (adoption proxies, not revenue): Bedrock AgentCore SDK 2M downloads in 5 months of preview. Google ADK 4.7M under <b>Gemini Enterprise Agent Platform</b> (formerly Vertex AI Agent Builder / Agentspace). Cast AI 2026: 8% CPU util, 69% overprovision (they sell optimization). Marginal compute on capacity you already pay for can be near zero. Substrate, GPU pools, and ops still cost. Never say free.</p>
+    <table>
+      <tr><th></th><th>Classic barracks</th><th>After morph · Substrate</th></tr>
+      <tr><td>Production</td><td>1 harness agent = 1 pod</td><td>WorkerPool of 8 gVisor workers · warp-in / restore</td></tr>
+      <tr><td>Idle</td><td>Standing bio · raidable process</td><td>Burrow vault · snapshot · no process</td></tr>
+      <tr><td>Security</td><td>Idle still running</td><td>You cannot compromise what is not running</td></tr>
+      <tr><td>30×</td><td>Density locked at 1×</td><td>240 actors / 8 workers via burrow. Not cheaper tokens.</td></tr>
+    </table>
+    <p>Sandbox purpose: an isolated place for harness agents to work without permanent pods. Density, cost, and security are the three proofs. Phones = units you did not train. Pete live-join is not this file.</p>
+    <button class="go" id="enter">START MISSION</button>
+  </div>
+</div>
 <div id="top">
   <span>KOPRULU OPS · <b id="race">TERRAN / CLASSIC K8S</b></span>
-  <span>◈ MINERALS <b id="min">50</b> &nbsp; ◇ GAS <b id="gas">8</b> &nbsp; SUPPLY <b id="sup">0/24</b> &nbsp; DENSITY <b id="den">1.0×</b></span>
+  <span>◈ MINERALS <b id="min">0</b> &nbsp; ◇ GAS <b id="gas">8</b> &nbsp; SUPPLY <b id="sup">0/24</b> &nbsp; DENSITY <b id="den">1.0×</b> &nbsp; PWNED <b id="pwn">0</b></span>
 </div>
 <div id="stage">
   <canvas id="c"></canvas>
-  <div id="advisor">Additional pods required. One harness agent still occupies one barracks plot.</div>
+  <div id="advisor">Adjutant: field is quiet. Train, or scan phones onto the map.</div>
+  <div id="queuebar">BUILD QUEUE <span id="qtxt">0 waiting</span><i id="qbar"></i></div>
 </div>
 <div id="console">
-  <canvas id="mini" width="170" height="150"></canvas>
+  <div id="rail">
+    <canvas id="mini" width="170" height="118"></canvas>
+  </div>
+  <div id="qrbox">
+    <img id="qrimg" alt="Join QR"/>
+    <div id="joinurl">Room mode: python3 server.py</div>
+    <div id="pete">Pete live-join is not this file.</div>
+  </div>
   <div id="portrait">
     <div class="wire" id="wire">NO UNIT</div>
     <div id="stats">
@@ -78,10 +127,22 @@ canvas{width:100%;height:100%;display:block}
 const canvas=document.getElementById("c"), ctx=canvas.getContext("2d");
 const mini=document.getElementById("mini"), mctx=mini.getContext("2d");
 const CAP=24, WORKERS=8, NODES=4;
-let mode="classic", seq=0, minerals=50;
+let LIVE=false, mode="classic", seq=0, queue=0, metrics={}, joinUrl="";
 const nodes=[], units=[], raids=[];
-let sel=new Set(), drag=null, groups={};
-function say(t){document.getElementById("advisor").textContent=t}
+let sel=new Set(), drag=null, groups={}, lastHot="";
+function $(id){return document.getElementById(id)}
+function say(t){$("advisor").textContent=t}
+function paintQR(url){
+  joinUrl=url||"";
+  $("joinurl").textContent=url||"Room mode: python3 server.py — then scan this rail.";
+  if(url){
+    $("qrimg").style.display="block";
+    $("qrimg").src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data="+encodeURIComponent(url);
+  } else {
+    $("qrimg").style.display="none";
+    $("qrimg").removeAttribute("src");
+  }
+}
 function resize(){
   const r=canvas.parentElement.getBoundingClientRect();
   canvas.width=r.width*devicePixelRatio; canvas.height=r.height*devicePixelRatio;
@@ -90,23 +151,154 @@ function resize(){
   nodes.length=0;
   [[.08,.16],[.54,.14],[.10,.52],[.56,.50]].forEach((s,i)=>nodes.push({id:i,x:s[0]*w,y:s[1]*h,w:w*.34,h:h*.32}));
 }
-function field(){return units.filter(u=>u.place==="field" && u.status!=="pwned")}
-function addUnit(name){
-  if(mode==="classic" && field().length>=CAP){say("You must construct additional pods."); return;}
-  if(mode==="substrate" && field().length>=WORKERS){
-    units.push({id:++seq,name:name||("A"+seq),x:0,y:0,tx:0,ty:0,place:"vault",status:"burrow",hp:40});
-    say("Actor stored in stasis. No process on the field."); return;
-  }
-  const n=nodes[field().length%NODES];
-  const u={id:++seq,name:name||("A"+seq),x:n.x+28+(seq%6)*18,y:n.y+48+(seq%4)*16,tx:0,ty:0,place:"field",status:"idle",hp:40};
-  u.tx=u.x;u.ty=u.y; units.push(u); minerals=Math.max(0,minerals-2);
+function field(){return units.filter(u=>u.place==="field" && u.status!=="compromised")}
+function vault(){return units.filter(u=>u.place==="vault")}
+function park(u){
+  const n=nodes[Math.max(0, u.node|0)]||nodes[0];
+  const sib=units.filter(x=>x.place==="field"&&x.node===u.node);
+  const i=Math.max(0, sib.indexOf(u));
+  u.x=n.x+28+(i%6)*18; u.y=n.y+48+Math.floor(i/6)*16; u.tx=u.x; u.ty=u.y;
 }
 function selected(){return units.filter(u=>sel.has(u.id)&&u.place==="field")}
+function selectedIds(){return [...sel]}
 function world(e){const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function hot(id){lastHot=id; document.querySelectorAll("#cmds button").forEach(b=>b.classList.toggle("sel", b.id===id));}
+function paintPortrait(){
+  const s=selected()[0];
+  $("wire").textContent=s?s.name:"NO UNIT";
+  $("uname").textContent=s? (mode==="classic"?"MARINE / HARNESS AGENT":"ACTOR / WORKERPOOL"):"—";
+  $("ustat").textContent=s? (s.status.toUpperCase()+" · "+(s.source==="phone"?"PHONE":"SIM")+" · plot "+(mode==="classic"?"occupied":"only while live")):"Drag-select an army. Phones keep their callsign.";
+  $("uhp").textContent=s? ("HP "+s.hp+"/40"):"";
+}
+function paintHud(){
+  const liveN=field().length;
+  const cap=mode==="classic"?CAP:WORKERS;
+  const den=metrics.density!=null?metrics.density:(mode==="classic"?1:(units.length/WORKERS||0));
+  const cost=metrics.cost!=null?metrics.cost:(mode==="classic"?liveN*0.12:WORKERS*0.12+vault().length*0.003);
+  const gas=metrics.cpu!=null?metrics.cpu:Math.max(8,Math.min(90,8+units.filter(u=>u.place==="field"&&u.status==="active").length*4));
+  $("min").textContent=cost.toFixed(2);
+  $("gas").textContent=Math.round(gas);
+  $("sup").textContent=liveN+"/"+cap;
+  $("den").textContent=Number(den).toFixed(1)+"×";
+  $("pwn").textContent=units.filter(u=>u.status==="compromised").length;
+  $("qtxt").textContent=(queue||0)+" waiting"+(mode==="classic"&&queue?" — You must construct additional pods.":"");
+  $("qbar").style.width=Math.min(100, (queue||0)*4)+"%";
+  $("race").textContent=mode==="substrate"?"ZERG / AGENT SUBSTRATE":"TERRAN / CLASSIC K8S";
+}
+function syncAgents(list){
+  const byId=new Map(units.map(u=>[u.id,u]));
+  const next=[];
+  list.forEach(a=>{
+    let u=byId.get(a.id);
+    const fresh=!u;
+    if(!u) u={id:a.id,x:0,y:0,tx:0,ty:0,hp:40,moving:false};
+    const was=u.place;
+    u.name=a.name; u.status=a.status; u.place=a.place; u.node=a.node; u.source=a.source||"sim";
+    if(u.place==="field" && (fresh || was!=="field" || !u.x)) park(u);
+    if(u.status==="compromised") u.hp=0;
+    else if(!u.hp) u.hp=40;
+    if(fresh && a.source==="phone") say(a.name+" dropped onto the field.");
+    next.push(u);
+  });
+  units.length=0; units.push(...next);
+  const liveIds=new Set(next.map(u=>u.id));
+  sel=new Set([...sel].filter(id=>liveIds.has(id)));
+}
+function applySnap(s){
+  mode=s.mode||"classic";
+  queue=s.queue||0;
+  metrics=s.metrics||{};
+  paintQR(s.joinUrl||"");
+  syncAgents(s.agents||[]);
+  paintPortrait();
+  paintHud();
+}
+function localAgent(name, source){
+  seq+=1;
+  const agent={id:"A"+String(seq).padStart(3,"0"),name:name||("agent-"+seq),source:source||"sim",status:"active",node:0,place:"field"};
+  if(mode==="classic"){
+    if(field().length>=CAP){agent.status="queued";agent.place="queue";agent.node=-1;queue+=1;say("You must construct additional pods.");return agent;}
+    agent.node=field().length%NODES;
+  } else {
+    if(field().length>=WORKERS){agent.status="checkpointed";agent.place="vault";agent.node=-1;return agent;}
+    agent.node=field().length%NODES;
+  }
+  const u={id:agent.id,name:agent.name,source:agent.source,status:agent.status,place:agent.place,node:agent.node,x:0,y:0,tx:0,ty:0,hp:40,moving:false};
+  units.push(u); if(u.place==="field") park(u);
+  return agent;
+}
+async function host(action, extra){
+  hot(action==="idle"||action==="recall"?"idle":action==="raid"?"wave":action);
+  if(LIVE){
+    const body=Object.assign({action}, extra||{});
+    const s=await fetch("/api/host",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
+    applySnap(s);
+    if(action==="probe") say(mode==="classic"?"Idle processes were still on the pod. PWNED.":"Probe found no process. Burrowed actors are snapshots.");
+    if(action==="flip") say(mode==="substrate"?"Morph complete. Hatchery is the WorkerPool. Burrow is checkpoint/restore.":"Reverted to barracks production.");
+    if(action==="show30") say("Design point. 240 actors / 8 workers. 30× is supply via burrow, not cheaper tokens.");
+    if(action==="reset"){raids.length=0;sel.clear();say("Mission reset. Barracks online.")}
+    return;
+  }
+  if(action==="train") localAgent();
+  if(action==="raid"){for(let i=0;i<6;i++) localAgent(); raid(16); say("Incoming through the gateway.");}
+  if(action==="wave1") for(let i=0;i<12;i++) localAgent();
+  if(action==="work"){
+    const pick=selected();
+    (pick.length?pick:units.filter(u=>u.status==="idle"||u.status==="checkpointed")).forEach(u=>{
+      if(mode==="substrate"&&u.status==="checkpointed"){
+        if(field().length>=WORKERS){const v=units.find(x=>x.status==="active"); if(v){v.status="checkpointed";v.place="vault";v.node=-1}}
+        u.status="active"; u.place="field"; park(u);
+      } else if(u.place==="field") u.status="active";
+    });
+  }
+  if(action==="idle"||action==="recall"){
+    const pick=selected();
+    const pool=pick.length?pick:units.filter(u=>u.place==="field");
+    pool.forEach(u=>{
+      if(mode==="substrate"){u.status="checkpointed";u.place="vault";u.node=-1;}
+      else if(u.status!=="queued") u.status="idle";
+    });
+    sel.clear();
+  }
+  if(action==="probe"){
+    if(mode==="classic"){
+      let hits=0;
+      units.forEach(u=>{if(u.place==="field"&&u.status==="idle"){u.status="compromised";u.hp=0;hits++}});
+      say(hits?"Your units are under attack. Idle processes were still on the pod.":"No idle army standing.");
+    } else say("Probe found no process. Burrowed actors are snapshots.");
+  }
+  if(action==="flip"){
+    if(mode==="classic"){
+      mode="substrate";
+      units.forEach((u,i)=>{
+        if(u.status==="compromised") u.status="idle";
+        if(i<WORKERS && u.status==="active"){u.place="field";u.status="active";u.node=i%NODES;park(u)}
+        else {u.place="vault";u.status="checkpointed";u.node=-1}
+      });
+      say("Morph complete. Hatchery is the WorkerPool. Burrow is checkpoint/restore.");
+    } else {
+      mode="classic";
+      units.forEach((u,i)=>{
+        if(i<CAP){u.place="field";u.status=u.status==="active"?"active":"idle";u.node=i%NODES;park(u)}
+        else {u.place="queue";u.status="queued";u.node=-1;queue++}
+      });
+      say("Reverted to barracks production. One unit, one plot.");
+    }
+  }
+  if(action==="show30"){
+    mode="substrate";
+    while(units.length<240){seq+=1; units.push({id:"X"+seq,name:"batch",source:"sim",status:"checkpointed",place:"vault",node:-1,x:0,y:0,tx:0,ty:0,hp:40})}
+    units.slice(0,WORKERS).forEach((u,i)=>{u.place="field";u.status="active";u.node=i%NODES;park(u)});
+    say("Design point. 240 actors / 8 workers. 30× is supply via burrow, not cheaper tokens.");
+  }
+  if(action==="reset"){units.length=0;raids.length=0;sel.clear();mode="classic";seq=0;queue=0;metrics={};say("Mission reset. Barracks online.")}
+  paintPortrait(); paintHud();
+}
+function raid(n){const w=canvas.width/devicePixelRatio; for(let i=0;i<n;i++) raids.push({x:40+Math.random()*(w-80),y:-12-i*14,vy:1.2,alive:true})}
 canvas.oncontextmenu=e=>e.preventDefault();
 canvas.onmousedown=e=>{
   const p=world(e);
-  if(e.button===2){ selected().forEach(u=>{u.tx=p.x;u.ty=p.y;u.status="move"}); return; }
+  if(e.button===2){ selected().forEach(u=>{u.tx=p.x;u.ty=p.y;u.moving=true}); return; }
   drag={x:p.x,y:p.y,x2:p.x,y2:p.y};
 };
 canvas.onmousemove=e=>{ if(drag){const p=world(e); drag.x2=p.x; drag.y2=p.y} };
@@ -119,66 +311,24 @@ window.onmouseup=()=>{
   } else sel=new Set(units.filter(u=>u.place==="field"&&u.x>=x1&&u.x<=x2&&u.y>=y1&&u.y<=y2).map(u=>u.id));
   drag=null; paintPortrait();
 };
-function paintPortrait(){
-  const s=selected()[0];
-  document.getElementById("wire").textContent=s?s.name:"NO UNIT";
-  document.getElementById("uname").textContent=s? (mode==="classic"?"MARINE / HARNESS AGENT":"ZERGLING / ACTOR"):"—";
-  document.getElementById("ustat").textContent=s? (s.status+" · node plot occupied: "+(mode==="classic"?"YES":"only while live")):"Drag-select an army.";
-  document.getElementById("uhp").textContent=s? ("HP "+s.hp+"/40"):"";
-}
-function raid(n){const w=canvas.width/devicePixelRatio; for(let i=0;i<n;i++) raids.push({x:40+Math.random()*(w-80),y:-12-i*14,vy:1.2,alive:true})}
-function probe(){
-  if(mode==="classic"){
-    let hits=0;
-    units.forEach(u=>{if(u.place==="field"&&u.status==="idle"){u.status="pwned";u.hp=0;hits++}});
-    say(hits?"Your units are under attack. Idle processes were still on the pod.":"No idle army standing.");
-  } else say("Probe found no process. Burrowed actors are snapshots.");
-}
-function flip(){
-  if(mode==="classic"){
-    mode="substrate";
-    units.forEach((u,i)=>{ if(u.status==="pwned") return; if(i<WORKERS){u.place="field";u.status="live"} else {u.place="vault";u.status="burrow"} });
-    document.getElementById("race").textContent="ZERG / AGENT SUBSTRATE";
-    say("Morph complete. Hatchery is the WorkerPool. Burrow is checkpoint/restore.");
-  } else {
-    mode="classic"; document.getElementById("race").textContent="TERRAN / CLASSIC K8S";
-    units.forEach((u,i)=>{ if(i<CAP){u.place="field";u.status="idle"} else {u.place="vault";u.status="queued"} });
-    say("Reverted to barracks production. One unit, one plot.");
-  }
-}
-function recall(){ selected().forEach(u=>{ if(mode==="substrate"){u.place="vault";u.status="burrow"} else u.status="idle"; sel.delete(u.id)} ); paintPortrait(); }
-function show30(){
-  mode="substrate"; document.getElementById("race").textContent="ZERG / AGENT SUBSTRATE";
-  while(units.length<240){ units.push({id:++seq,name:"A"+seq,x:0,y:0,tx:0,ty:0,place:"vault",status:"burrow",hp:40}); }
-  units.slice(0,WORKERS).forEach((u,i)=>{u.place="field";u.status="live"; const n=nodes[i%NODES]; u.x=n.x+40;u.y=n.y+50;u.tx=u.x;u.ty=u.y});
-  say("Design point. 240 actors / 8 workers. 30× is supply via burrow, not cheaper tokens.");
-}
 function tick(){
   units.forEach(u=>{
-    if(u.place!=="field"||u.status==="pwned") return;
-    const d=Math.hypot(u.tx-u.x,u.ty-u.y);
+    if(u.place!=="field"||u.status==="compromised") return;
+    const d=Math.hypot((u.tx||u.x)-u.x,(u.ty||u.y)-u.y);
     if(d>2){u.x+=(u.tx-u.x)/d*1.7; u.y+=(u.ty-u.y)/d*1.7;}
-    else if(u.status==="move") u.status=mode==="substrate"?"live":"idle";
+    else u.moving=false;
   });
   raids.forEach(r=>{
     r.y+=r.vy;
-    units.forEach(u=>{ if(u.place==="field"&&u.status!=="pwned"&&Math.hypot(u.x-r.x,u.y-r.y)<15){ r.alive=false; u.status="live"; }});
+    units.forEach(u=>{ if(u.place==="field"&&u.status!=="compromised"&&Math.hypot(u.x-r.x,u.y-r.y)<15){ r.alive=false; if(!LIVE) u.status="active"; }});
     if(r.y>canvas.height/devicePixelRatio+10) r.alive=false;
   });
   for(let i=raids.length-1;i>=0;i--) if(!raids[i].alive) raids.splice(i,1);
-  const live=field().length;
-  const gas=Math.max(8,Math.min(90,8+units.filter(u=>u.place==="field"&&(u.status==="live"||u.status==="move")).length*4));
-  const cap=mode==="classic"?CAP:WORKERS;
-  const den=mode==="classic"?1:(units.length/WORKERS);
-  minerals=mode==="classic"?Math.max(8,live*2):16+Math.floor(units.filter(u=>u.place==="vault").length/10);
-  document.getElementById("min").textContent=minerals;
-  document.getElementById("gas").textContent=gas;
-  document.getElementById("sup").textContent=live+"/"+cap;
-  document.getElementById("den").textContent=den.toFixed(1)+"×";
+  if(!LIVE) paintHud();
 }
 function draw(){
   const w=canvas.width/devicePixelRatio, h=canvas.height/devicePixelRatio;
-  ctx.fillStyle="#1c2a14"; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle=mode==="substrate"?"#102018":"#1c2a14"; ctx.fillRect(0,0,w,h);
   ctx.strokeStyle="rgba(180,150,70,.12)";
   for(let x=0;x<w;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
   for(let y=0;y<h;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
@@ -193,47 +343,66 @@ function draw(){
   });
   if(mode==="substrate"){
     ctx.setLineDash([5,4]); ctx.strokeStyle="#7a6cff"; ctx.strokeRect(w-200,h-130,184,110); ctx.setLineDash([]);
-    ctx.fillText("BURROW VAULT "+units.filter(u=>u.place==="vault").length, w-188, h-112);
-    units.filter(u=>u.place==="vault").slice(0,48).forEach((u,i)=>{ ctx.fillStyle="#5a4a88"; ctx.fillRect(w-188+(i%12)*14,h-100+Math.floor(i/12)*16,10,10); });
+    ctx.fillStyle="#c9b8ff"; ctx.fillText("BURROW VAULT "+vault().length+" · NO PROCESS", w-188, h-112);
+    vault().slice(0,48).forEach((u,i)=>{ ctx.fillStyle="#5a4a88"; ctx.fillRect(w-188+(i%12)*14,h-100+Math.floor(i/12)*16,10,10); });
   }
   units.forEach(u=>{
     if(u.place!=="field") return;
-    ctx.fillStyle=u.status==="pwned"?"#ff5a4e":u.status==="idle"?"#e4c066":"#3dffc0";
+    ctx.fillStyle=u.status==="compromised"?"#ff5a4e":u.status==="idle"?"#e4c066":"#3dffc0";
     ctx.beginPath(); ctx.moveTo(u.x,u.y-10); ctx.lineTo(u.x+8,u.y+8); ctx.lineTo(u.x-8,u.y+8); ctx.closePath(); ctx.fill();
     ctx.fillStyle="#000"; ctx.fillRect(u.x-10,u.y+10,20,3); ctx.fillStyle=u.hp?"#3dffc0":"#ff5a4e"; ctx.fillRect(u.x-10,u.y+10,20*(u.hp/40),3);
+    ctx.fillStyle="#fff8d6"; ctx.font="9px Share Tech Mono"; ctx.textAlign="center";
+    ctx.fillText((u.name||"").slice(0,8), u.x, u.y+22);
+    ctx.textAlign="start";
     if(sel.has(u.id)){ctx.strokeStyle="#fff8d6"; ctx.strokeRect(u.x-12,u.y-12,24,24)}
+    if(u.source==="phone"){ctx.strokeStyle="#3dffc0"; ctx.beginPath(); ctx.arc(u.x,u.y,13,0,7); ctx.stroke()}
   });
   raids.forEach(r=>{ctx.fillStyle="#ff8a3a";ctx.fillRect(r.x-3,r.y-8,6,8)});
   if(drag){ctx.strokeStyle="#fff8d6";ctx.strokeRect(Math.min(drag.x,drag.x2),Math.min(drag.y,drag.y2),Math.abs(drag.x2-drag.x),Math.abs(drag.y2-drag.y))}
-  mctx.fillStyle="#0b0a07"; mctx.fillRect(0,0,170,150);
-  nodes.forEach(n=>{ mctx.strokeStyle="#8a6a30"; mctx.strokeRect(n.x/w*170,n.y/h*150,n.w/w*170,n.h/h*150); });
-  units.forEach(u=>{ if(u.place!=="field")return; mctx.fillStyle=sel.has(u.id)?"#fff":"#3dffc0"; mctx.fillRect(u.x/w*170,u.y/h*150,2,2); });
+  const mw=mini.width/devicePixelRatio||170, mh=mini.height/devicePixelRatio||118;
+  mctx.fillStyle="#0b0a07"; mctx.fillRect(0,0,mw,mh);
+  nodes.forEach(n=>{ mctx.strokeStyle="#8a6a30"; mctx.strokeRect(n.x/w*mw,n.y/h*mh,n.w/w*mw,n.h/h*mh); });
+  units.forEach(u=>{ if(u.place!=="field")return; mctx.fillStyle=sel.has(u.id)?"#fff":u.status==="compromised"?"#ff5a4e":"#3dffc0"; mctx.fillRect(u.x/w*mw,u.y/h*mh,3,3); });
 }
 function loop(){ tick(); draw(); requestAnimationFrame(loop); }
-window.onresize=resize; resize();
-for(let i=0;i<8;i++) addUnit();
-loop(); paintPortrait();
-document.getElementById("train").onclick=()=>addUnit();
-document.getElementById("work").onclick=()=>selected().forEach(u=>u.status="live");
-document.getElementById("idle").onclick=recall;
-document.getElementById("wave").onclick=()=>{for(let i=0;i<6;i++)addUnit(); raid(16); say("Incoming through the gateway.")};
-document.getElementById("flip").onclick=flip;
-document.getElementById("probe").onclick=probe;
-document.getElementById("recall").onclick=recall;
-document.getElementById("x30").onclick=show30;
-document.getElementById("reset").onclick=()=>{units.length=0;raids.length=0;sel.clear();mode="classic";seq=0;document.getElementById("race").textContent="TERRAN / CLASSIC K8S";for(let i=0;i<8;i++)addUnit();say("Mission reset. Barracks online.")};
+function actWork(){ host("work", selectedIds().length?{ids:selectedIds()}:{}) }
+function actIdle(){ host("idle", selectedIds().length?{ids:selectedIds()}:{}) }
+$("train").onclick=()=>host("train");
+$("work").onclick=actWork;
+$("idle").onclick=actIdle;
+$("wave").onclick=()=>host("raid");
+$("flip").onclick=()=>host("flip");
+$("probe").onclick=()=>host("probe");
+$("recall").onclick=()=>host("recall", selectedIds().length?{ids:selectedIds()}:{});
+$("x30").onclick=()=>host("show30");
+$("reset").onclick=()=>host("reset");
+$("enter").onclick=()=>{$("brief").classList.add("hide"); say("Mission online. Train until amber idle is obvious, then scan phones.");};
 window.onkeydown=e=>{
   const k=e.key.toLowerCase();
-  if(k==="a") addUnit();
-  if(k==="g") {for(let i=0;i<6;i++)addUnit(); raid(16)}
-  if(k==="f") flip();
-  if(k==="p") probe();
-  if(k==="r"||k==="i") recall();
-  if(k==="3") show30();
-  if(k==="escape") document.getElementById("reset").click();
-  if(e.key>="1"&&e.key<="9"&&e.ctrlKey){ groups[e.key]=[...sel]; e.preventDefault(); }
-  else if(e.key>="1"&&e.key<="9"&&groups[e.key]) sel=new Set(groups[e.key]);
+  if(k==="a") host("train");
+  if(k==="w") actWork();
+  if(k==="g") host("raid");
+  if(k==="f") host("flip");
+  if(k==="p") host("probe");
+  if(k==="r"||k==="i") actIdle();
+  if(k==="3") host("show30");
+  if(k==="escape") host("reset");
+  if(e.key>="1"&&e.key<="9"&&e.ctrlKey){ groups[e.key]=[...sel]; e.preventDefault(); say("Control group "+e.key+" saved."); }
+  else if(e.key>="1"&&e.key<="9"&&groups[e.key]) { sel=new Set(groups[e.key]); paintPortrait(); }
 };
+async function pull(){
+  if(!LIVE) return;
+  const s=await fetch("/api/state").then(r=>r.json());
+  applySnap(s);
+}
+window.onresize=resize; resize();
+loop(); paintPortrait(); paintHud();
+(async()=>{
+  try{
+    const s=await fetch("/api/state").then(r=>r.json());
+    if(s && s.agents){ LIVE=true; applySnap(s); setInterval(pull,400); say("Room state live. QR is on the minimap rail."); }
+  }catch(e){ paintQR(""); }
+})();
 </script>
 </body>
 </html>
