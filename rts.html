@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ATE RTS // Agent Substrate</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070b08;--cyan:#3dffc0;--amber:#ffc14a;--red:#ff4d6a;--ink:#d7ffe9;--dim:#7ea892}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#050805;color:var(--ink);font-family:"Share Tech Mono",monospace;overflow:hidden}
+body{display:grid;grid-template-rows:auto 1fr auto}
+header,footer{background:#07110c;border-color:#163226;border-style:solid;border-width:0}
+header{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom-width:1px;border-bottom-color:#1c3d2e}
+h1{margin:0;font-family:Orbitron,sans-serif;font-size:13px;letter-spacing:.16em}
+.res{display:flex;gap:16px;font-size:12px}
+.res b{color:var(--cyan)}
+#stage{position:relative;min-height:0}
+canvas{width:100%;height:100%;display:block;background:#08140e}
+#hint{position:absolute;left:12px;top:10px;font-size:12px;color:var(--dim);pointer-events:none;max-width:46%}
+footer{display:flex;flex-wrap:wrap;gap:8px;padding:8px 12px;border-top:1px solid #1c3d2e}
+button{font:inherit;border:1px solid var(--cyan);background:transparent;color:var(--cyan);padding:8px 10px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+button:hover{background:rgba(61,255,192,.1)}
+button.pri{background:var(--cyan);color:#04150f;font-weight:700}
+button.bad{border-color:var(--red);color:var(--red)}
+button.flip{border-color:#9b8cff;color:#9b8cff}
+.note{margin-left:auto;font-size:11px;color:var(--dim);max-width:420px}
+</style>
+</head>
+<body>
+<header>
+  <h1>ATE RTS // HARNESS OPS</h1>
+  <div class="res">
+    <span>CPU <b id="cpu">8%</b></span>
+    <span>RESERVE <b id="pay">$0.48</b></span>
+    <span>POP <b id="pop">0/24</b></span>
+    <span>DENSITY <b id="den">1.0×</b></span>
+    <span>MODE <b id="mode">CLASSIC</b></span>
+  </div>
+</header>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="hint">LMB drag-select · RMB move · Train agents into node plots. Idle units on a plot are raidable. Flip morphs plots into a WorkerPool + stasis vault.</div>
+</div>
+<footer>
+  <button class="pri" id="train">Train agent</button>
+  <button id="w1">Raid wave</button>
+  <button class="flip" id="flip">Research Substrate</button>
+  <button class="bad" id="probe">Enemy probe</button>
+  <button id="recall">Recall selected</button>
+  <button id="reset">Reset</button>
+  <div class="note">Classic supply = one agent per pod plot. Substrate supply = 8 live bunkers; idle units stasis off-map. 30× is actors/worker via suspend, not cheaper tokens.</div>
+</footer>
+<script>
+const canvas=document.getElementById("c"), ctx=canvas.getContext("2d");
+const NODES=4, SLOTS=6, CAP=24, WORKERS=8;
+let W=0,H=0, mode="classic", seq=0, cash=0.48;
+const nodes=[], units=[], raids=[], vault=[];
+let sel=new Set(), drag=null, mx=0,my=0;
+function resize(){
+  const r=canvas.parentElement.getBoundingClientRect();
+  W=canvas.width=r.width*devicePixelRatio; H=canvas.height=r.height*devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  layout();
+}
+function layout(){
+  const w=canvas.width/devicePixelRatio, h=canvas.height/devicePixelRatio;
+  const spots=[{x:.14,y:.22},{x:.62,y:.18},{x:.16,y:.58},{x:.60,y:.55}];
+  nodes.length=0;
+  spots.forEach((s,i)=>nodes.push({id:i,x:s.x*w,y:s.y*h,w:w*.28,h:h*.28}));
+}
+function addUnit(name){
+  if(mode==="classic" && units.length>=CAP) return null;
+  if(mode==="substrate" && units.filter(u=>u.place!=="vault").length>=WORKERS){
+    const u={id:++seq,name:name||("A"+seq),x:nodes[0].x+40,y:nodes[0].y+40,tx:0,ty:0,place:"vault",hp:1,status:"snap",sel:false};
+    vault.push(u); units.push(u); return u;
+  }
+  const n=nodes[units.filter(u=>u.place!=="vault").length % NODES];
+  const u={id:++seq,name:name||("A"+seq),x:n.x+30+(seq%5)*16,y:n.y+40+(seq%3)*18,tx:0,ty:0,place:"field",hp:1,status:"idle",sel:false};
+  u.tx=u.x; u.ty=u.y; units.push(u); return u;
+}
+function selected(){return units.filter(u=>sel.has(u.id) && u.place!=="vault")}
+function toWorld(e){
+  const r=canvas.getBoundingClientRect();
+  return {x:(e.clientX-r.left), y:(e.clientY-r.top)};
+}
+canvas.addEventListener("contextmenu",e=>e.preventDefault());
+canvas.addEventListener("mousedown",e=>{
+  const p=toWorld(e);
+  if(e.button===2){
+    selected().forEach(u=>{u.tx=p.x; u.ty=p.y; u.status="move"});
+    return;
+  }
+  drag={x:p.x,y:p.y,x2:p.x,y2:p.y};
+});
+canvas.addEventListener("mousemove",e=>{
+  const p=toWorld(e); mx=p.x; my=p.y;
+  if(drag){drag.x2=p.x; drag.y2=p.y}
+});
+window.addEventListener("mouseup",e=>{
+  if(!drag) return;
+  const x1=Math.min(drag.x,drag.x2), y1=Math.min(drag.y,drag.y2);
+  const x2=Math.max(drag.x,drag.x2), y2=Math.max(drag.y,drag.y2);
+  if(Math.hypot(drag.x2-drag.x,drag.y2-drag.y)<6){
+    const hit=units.find(u=>u.place!=="vault" && Math.hypot(u.x-drag.x,u.y-drag.y)<14);
+    sel= hit? new Set([hit.id]) : new Set();
+  } else {
+    sel=new Set(units.filter(u=>u.place!=="vault" && u.x>=x1&&u.x<=x2&&u.y>=y1&&u.y<=y2).map(u=>u.id));
+  }
+  drag=null;
+});
+function spawnRaid(n){
+  const w=canvas.width/devicePixelRatio;
+  for(let i=0;i<n;i++) raids.push({x:80+Math.random()*(w-160),y:-20-i*16,vy:1.1+Math.random(),kind:"session",alive:true});
+}
+function enemyProbe(){
+  if(mode==="classic"){
+    units.forEach(u=>{ if(u.place==="field" && u.status!=="move"){ u.status="pwned"; u.hp=0; }});
+  }
+}
+function flip(){
+  if(mode==="classic"){
+    mode="substrate";
+    units.forEach((u,i)=>{
+      if(i<WORKERS){u.place="field"; u.status="live"; const n=nodes[i%NODES]; u.tx=n.x+40; u.ty=n.y+50;}
+      else {u.place="vault"; u.status="snap";}
+    });
+  } else {
+    mode="classic";
+    units.forEach((u,i)=>{
+      if(i<CAP){u.place="field"; u.status="idle"; const n=nodes[i%NODES]; u.x=n.x+24+(i%6)*18; u.y=n.y+36; u.tx=u.x; u.ty=u.y;}
+      else {u.place="vault"; u.status="queued";}
+    });
+  }
+}
+function recall(){
+  selected().forEach(u=>{ if(mode==="substrate"){ u.place="vault"; u.status="snap"; } else u.status="idle"; sel.delete(u.id); });
+}
+function tick(){
+  units.forEach(u=>{
+    if(u.place==="vault"||u.status==="pwned") return;
+    const dx=u.tx-u.x, dy=u.ty-u.y, d=Math.hypot(dx,dy);
+    if(d>2){u.x+=dx/d*1.6; u.y+=dy/d*1.6; u.status= mode==="substrate"?"live":"move"}
+    else if(u.status==="move") u.status=mode==="substrate"?"live":"idle";
+  });
+  raids.forEach(r=>{
+    r.y+=r.vy;
+    const gwX=canvas.width/devicePixelRatio/2, gwY=36;
+    if(!r.passed && r.y>gwY){ r.passed=true; }
+    units.forEach(u=>{
+      if(u.place==="field" && u.status!=="pwned" && Math.hypot(u.x-r.x,u.y-r.y)<16){ r.alive=false; u.status="live"; }
+    });
+    if(mode==="classic" && r.y>canvas.height/devicePixelRatio-40){
+      const idle=units.find(u=>u.status==="idle"); if(idle) idle.status="busy";
+      r.alive=false;
+    }
+  });
+  for(let i=raids.length-1;i>=0;i--) if(!raids[i].alive || raids[i].y>canvas.height/devicePixelRatio+20) raids.splice(i,1);
+  const field=units.filter(u=>u.place==="field");
+  const live=field.filter(u=>u.status!=="pwned");
+  const idleN=live.filter(u=>u.status==="idle").length;
+  const cpu=Math.max(8, Math.min(90, 8+live.filter(u=>u.status==="live"||u.status==="move"||u.status==="busy").length*4));
+  const popCap=mode==="classic"?CAP:WORKERS;
+  const density=mode==="classic"?1:(units.length/WORKERS);
+  cash = mode==="classic" ? live.length*0.12 : WORKERS*0.12 + units.filter(u=>u.place==="vault").length*0.003;
+  document.getElementById("cpu").textContent=Math.round(cpu)+"%";
+  document.getElementById("pay").textContent="$"+cash.toFixed(2);
+  document.getElementById("pop").textContent=(mode==="classic"?live.length:live.length)+"/"+popCap;
+  document.getElementById("den").textContent=density.toFixed(1)+"×";
+  document.getElementById("mode").textContent=mode.toUpperCase();
+  document.getElementById("hint").textContent= mode==="classic"
+    ? "Idle units standing on plots still cost supply. Enemy probe kills what is standing. That is pod identity."
+    : "Only 8 can be on the field. The rest are stasis in the vault — no process to raid. Density is actors per bunker.";
+}
+function draw(){
+  const w=canvas.width/devicePixelRatio, h=canvas.height/devicePixelRatio;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle="#08140e"; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle="rgba(61,255,192,.08)";
+  for(let x=0;x<w;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  for(let y=0;y<h;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  ctx.fillStyle="#9b8cff"; ctx.font="12px Share Tech Mono";
+  ctx.fillText("AGENTGATEWAY CHOKE", w/2-70, 22);
+  ctx.strokeStyle="#9b8cff"; ctx.strokeRect(w/2-90,8,180,22);
+  nodes.forEach((n,i)=>{
+    ctx.strokeStyle=mode==="substrate"?"#3dffc0":"#2a5a40";
+    ctx.strokeRect(n.x,n.y,n.w,n.h);
+    ctx.fillStyle="#7ea892"; ctx.fillText((mode==="substrate"?"WORKER RACK ":"NODE ")+i, n.x+8, n.y+16);
+  });
+  if(mode==="substrate"){
+    ctx.strokeStyle="#9b8cff"; ctx.setLineDash([4,4]);
+    ctx.strokeRect(w-210,h-150,190,120); ctx.setLineDash([]);
+    ctx.fillStyle="#9b8cff"; ctx.fillText("STASIS VAULT "+units.filter(u=>u.place==="vault").length, w-200, h-132);
+    units.filter(u=>u.place==="vault").slice(0,40).forEach((u,i)=>{
+      ctx.fillStyle="#6d7a90"; ctx.fillRect(w-200+(i%10)*16, h-120+Math.floor(i/10)*14, 10, 10);
+    });
+  }
+  units.forEach(u=>{
+    if(u.place==="vault") return;
+    ctx.beginPath(); ctx.arc(u.x,u.y,9,0,Math.PI*2);
+    ctx.fillStyle=u.status==="pwned"?"#ff4d6a":u.status==="idle"?"#ffc14a":"#3dffc0";
+    ctx.fill();
+    if(sel.has(u.id)){ctx.strokeStyle="#fff"; ctx.strokeRect(u.x-12,u.y-12,24,24)}
+    ctx.fillStyle="#cfe"; ctx.font="10px Share Tech Mono"; ctx.fillText(u.name, u.x-10, u.y-14);
+  });
+  raids.forEach(r=>{ ctx.fillStyle="#ff8a5b"; ctx.beginPath(); ctx.moveTo(r.x,r.y); ctx.lineTo(r.x-5,r.y-10); ctx.lineTo(r.x+5,r.y-10); ctx.fill(); });
+  if(drag){
+    ctx.strokeStyle="#3dffc0";
+    ctx.strokeRect(Math.min(drag.x,drag.x2),Math.min(drag.y,drag.y2),Math.abs(drag.x2-drag.x),Math.abs(drag.y2-drag.y));
+  }
+}
+function loop(){ tick(); draw(); requestAnimationFrame(loop); }
+window.addEventListener("resize",resize);
+resize();
+for(let i=0;i<8;i++) addUnit();
+loop();
+document.getElementById("train").onclick=()=>addUnit();
+document.getElementById("w1").onclick=()=>spawnRaid(14);
+document.getElementById("flip").onclick=flip;
+document.getElementById("probe").onclick=enemyProbe;
+document.getElementById("recall").onclick=recall;
+document.getElementById("reset").onclick=()=>{units.length=0;raids.length=0;sel.clear();mode="classic";seq=0;for(let i=0;i<8;i++)addUnit()};
+</script>
+</body>
+</html>
