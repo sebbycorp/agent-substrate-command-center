@@ -307,7 +307,7 @@ function flip(){
 function attack(){
   document.body.classList.add("shake");setTimeout(()=>document.body.classList.remove("shake"),360);beep(90,.2);
   if(S.mode==="classic"){
-    const t=idle();if(!t.length){log("PROBE // wait for idle processes");return}
+    const t=idle();if(!t.length){log("PROBE // Nothing idle to attack.");return}
     t.forEach(a=>a.status="compromised");log("PROBE // PWNED — the process was still running");gw("PWNED — the process was still running.");
   }else{
     log("PROBE // Miss — nothing running to attack.");
@@ -323,7 +323,7 @@ function x30(){
   for(let w=0;w<WORKERS;w++){if(S.agents[w]){S.agents[w].status="active";S.agents[w].node=w%NODES}}
   log("30x // more agents per worker by sleeping idle ones — not cheaper tokens");gw("30× = density, not cheaper tokens");flash();render();
 }
-function reset(){clearInterval(S.tick);Object.assign(S,{mode:"classic",tick:0,seq:0,queue:0,agents:[]});$("lane").innerHTML="";$("log").innerHTML="";phase();gw("Aperture closed.");log("RESET");render()}
+function reset(){clearInterval(S.tick);Object.assign(S,{mode:"classic",tick:0,seq:0,queue:0,agents:[]});$("lane").innerHTML="";$("log").innerHTML="";phase();gw("agentgateway closed. Add agents.");log("RESET");render()}
 const ROOM=location.protocol!=="file:";
 function applySnap(s){
   S.mode=s.mode; S.agents=s.agents||[]; S.queue=s.queue||0;
