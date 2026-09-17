@@ -225,6 +225,7 @@ class SurfaceContractTests(unittest.TestCase):
         self.assertIn("/api/state", text)
         self.assertIn("/api/host", text)
         self.assertIn("Pete live-join is not this file", text)
+        self.assertIn('overlay").classList.add("hide")', text)
 
     def test_rts_room_copy_is_projector_legible(self):
         text = ROOT.joinpath("rts.html").read_text(encoding="utf-8")

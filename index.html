@@ -352,7 +352,7 @@ $("room").onclick=()=>{ if(ROOM) location.href="/"; else log("ROOM // python3 se
 $("x30").onclick=()=>ROOM?host("show30"):x30();
 $("rst").onclick=()=>ROOM?host("reset"):reset();
 phase();log(ROOM?"ROOM // shared state with the field":"ONLINE // sim only");render();
-if(ROOM){ pull(); setInterval(pull,400); }
+if(ROOM){ $("overlay").classList.add("hide"); pull(); setInterval(pull,400); }
 </script>
 </body>
 </html>
