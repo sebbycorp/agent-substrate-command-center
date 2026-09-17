@@ -400,7 +400,7 @@ loop(); paintPortrait(); paintHud();
 (async()=>{
   try{
     const s=await fetch("/api/state").then(r=>r.json());
-    if(s && s.agents){ LIVE=true; applySnap(s); setInterval(pull,400); say("Room state live. QR is on the minimap rail."); }
+    if(s && s.agents){ LIVE=true; applySnap(s); $("brief").classList.add("hide"); setInterval(pull,400); say("Room state live. QR is on the minimap rail."); }
   }catch(e){ paintQR(""); }
 })();
 </script>
