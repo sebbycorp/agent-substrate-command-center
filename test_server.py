@@ -218,6 +218,7 @@ class SurfaceContractTests(unittest.TestCase):
         self.assertIn("/api/state", text)
         self.assertIn("/api/host", text)
         self.assertIn("Pete live-join is not this file", text)
+        self.assertIn('overlay").classList.add("hide")', text)
 
     def test_no_duplicate_starcraft_field_file(self):
         self.assertFalse((ROOT / "sc.html").exists())

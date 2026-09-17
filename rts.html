@@ -40,8 +40,8 @@ canvas{width:100%;height:100%;display:block}
 .wire{border:1px solid var(--gold);display:grid;place-items:center;font-family:Orbitron,sans-serif;color:var(--gold);font-size:11px}
 #cmds{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 #cmds button{
-  height:44px;background:#2a1e10;border:1px solid #7a6230;color:var(--gold);
-  font:11px/1 "Share Tech Mono",monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+  height:48px;background:#3a2a14;border:1px solid #c9a44a;color:#fff8d6;
+  font:12px/1 "Share Tech Mono",monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
 }
 #cmds button:hover{background:#3a2a14}
 #cmds button.hot{border-color:var(--teal);color:var(--teal)}
@@ -150,6 +150,10 @@ function resize(){
   const w=r.width,h=r.height;
   nodes.length=0;
   [[.08,.16],[.54,.14],[.10,.52],[.56,.50]].forEach((s,i)=>nodes.push({id:i,x:s[0]*w,y:s[1]*h,w:w*.34,h:h*.32}));
+  const mr=mini.getBoundingClientRect();
+  mini.width=Math.max(1,mr.width)*devicePixelRatio;
+  mini.height=Math.max(1,mr.height)*devicePixelRatio;
+  mctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
 }
 function field(){return units.filter(u=>u.place==="field" && u.status!=="compromised")}
 function vault(){return units.filter(u=>u.place==="vault")}
@@ -157,7 +161,7 @@ function park(u){
   const n=nodes[Math.max(0, u.node|0)]||nodes[0];
   const sib=units.filter(x=>x.place==="field"&&x.node===u.node);
   const i=Math.max(0, sib.indexOf(u));
-  u.x=n.x+28+(i%6)*18; u.y=n.y+48+Math.floor(i/6)*16; u.tx=u.x; u.ty=u.y;
+  u.x=n.x+40+(i%6)*28; u.y=n.y+56+Math.floor(i/6)*28; u.tx=u.x; u.ty=u.y;
 }
 function selected(){return units.filter(u=>sel.has(u.id)&&u.place==="field")}
 function selectedIds(){return [...sel]}
@@ -306,7 +310,7 @@ window.onmouseup=()=>{
   if(!drag) return;
   const x1=Math.min(drag.x,drag.x2),y1=Math.min(drag.y,drag.y2),x2=Math.max(drag.x,drag.x2),y2=Math.max(drag.y,drag.y2);
   if(Math.hypot(drag.x2-drag.x,drag.y2-drag.y)<6){
-    const hit=units.find(u=>u.place==="field"&&Math.hypot(u.x-drag.x,u.y-drag.y)<14);
+    const hit=units.find(u=>u.place==="field"&&Math.hypot(u.x-drag.x,u.y-drag.y)<22);
     sel=hit?new Set([hit.id]):new Set();
   } else sel=new Set(units.filter(u=>u.place==="field"&&u.x>=x1&&u.x<=x2&&u.y>=y1&&u.y<=y2).map(u=>u.id));
   drag=null; paintPortrait();
@@ -349,17 +353,17 @@ function draw(){
   units.forEach(u=>{
     if(u.place!=="field") return;
     ctx.fillStyle=u.status==="compromised"?"#ff5a4e":u.status==="idle"?"#e4c066":"#3dffc0";
-    ctx.beginPath(); ctx.moveTo(u.x,u.y-10); ctx.lineTo(u.x+8,u.y+8); ctx.lineTo(u.x-8,u.y+8); ctx.closePath(); ctx.fill();
-    ctx.fillStyle="#000"; ctx.fillRect(u.x-10,u.y+10,20,3); ctx.fillStyle=u.hp?"#3dffc0":"#ff5a4e"; ctx.fillRect(u.x-10,u.y+10,20*(u.hp/40),3);
-    ctx.fillStyle="#fff8d6"; ctx.font="9px Share Tech Mono"; ctx.textAlign="center";
-    ctx.fillText((u.name||"").slice(0,8), u.x, u.y+22);
+    ctx.beginPath(); ctx.moveTo(u.x,u.y-16); ctx.lineTo(u.x+14,u.y+12); ctx.lineTo(u.x-14,u.y+12); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#000"; ctx.fillRect(u.x-14,u.y+14,28,4); ctx.fillStyle=u.hp?"#3dffc0":"#ff5a4e"; ctx.fillRect(u.x-14,u.y+14,28*(u.hp/40),4);
+    ctx.fillStyle="#fff8d6"; ctx.font="13px Share Tech Mono"; ctx.textAlign="center";
+    ctx.fillText((u.name||"").slice(0,10), u.x, u.y+32);
     ctx.textAlign="start";
-    if(sel.has(u.id)){ctx.strokeStyle="#fff8d6"; ctx.strokeRect(u.x-12,u.y-12,24,24)}
-    if(u.source==="phone"){ctx.strokeStyle="#3dffc0"; ctx.beginPath(); ctx.arc(u.x,u.y,13,0,7); ctx.stroke()}
+    if(sel.has(u.id)){ctx.strokeStyle="#fff8d6"; ctx.strokeRect(u.x-18,u.y-20,36,36)}
+    if(u.source==="phone"){ctx.strokeStyle="#3dffc0"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(u.x,u.y,18,0,7); ctx.stroke(); ctx.lineWidth=1}
   });
   raids.forEach(r=>{ctx.fillStyle="#ff8a3a";ctx.fillRect(r.x-3,r.y-8,6,8)});
   if(drag){ctx.strokeStyle="#fff8d6";ctx.strokeRect(Math.min(drag.x,drag.x2),Math.min(drag.y,drag.y2),Math.abs(drag.x2-drag.x),Math.abs(drag.y2-drag.y))}
-  const mw=mini.width/devicePixelRatio||170, mh=mini.height/devicePixelRatio||118;
+  const mw=mini.getBoundingClientRect().width||170, mh=mini.getBoundingClientRect().height||118;
   mctx.fillStyle="#0b0a07"; mctx.fillRect(0,0,mw,mh);
   nodes.forEach(n=>{ mctx.strokeStyle="#8a6a30"; mctx.strokeRect(n.x/w*mw,n.y/h*mh,n.w/w*mw,n.h/h*mh); });
   units.forEach(u=>{ if(u.place!=="field")return; mctx.fillStyle=sel.has(u.id)?"#fff":u.status==="compromised"?"#ff5a4e":"#3dffc0"; mctx.fillRect(u.x/w*mw,u.y/h*mh,3,3); });
