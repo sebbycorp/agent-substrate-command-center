@@ -1,112 +1,148 @@
-# Handoff prompt for zomnie agent
+# Handoff prompt — Agent Substrate enablement game
 
-Copy everything below the line into the next Grok bot and keep building.
+Copy everything below the line into the zomnie Grok agent.
 
 ---
 
-You are continuing work on a sales-enablement game for Solo.io Agent Substrate. Do not start over. Read this entire brief before touching files.
+You are continuing a Solo.io sales-enablement game already in progress. Do not restart from ideas. Build on the repo and the locked teaching brief. You write and ship working files, not slide decks.
 
-## Who this is for
+## Mission
 
-Presenter laptop + projector + optional phones on the same Wi-Fi. Audience is sales enablement, not game designers. The game must teach a session, not win Steam.
+Build a room-scale enablement game that teaches this sentence:
 
-## Session goal (do not dilute)
+> Harness agents are a new class of workload Kubernetes was not designed for. Solo Agent Substrate is how you run them on the Kubernetes you already have — instead of paying a cloud agent PaaS to host them somewhere else.
 
-Teach the room that **harness agents are a new class of workload that Kubernetes was not designed for**, and that **Solo Agent Substrate is how you run them on the Kubernetes platform you already have** — instead of paying a cloud agent PaaS to host them somewhere else.
+Audience: sales enablement + students in a room. Projector command center + phones. Feel should now be **StarCraft-shaped RTS**, not a dashboard. Original zombie/horde instinct is fine as incoming raids, not as the art direction.
 
-## Locked product claims (never invent numbers or names)
-
-- AWS Bedrock AgentCore went GA October 2025. SDK passed **2 million downloads** within 5 months of preview. These are **download/adoption proxies**, not revenue or customer-count growth. Do not say "growth rate" unless it is clearly SDK adoption.
-- Google ADK passed **4.7 million downloads**. Product name on stage: **Gemini Enterprise Agent Platform** (formerly Vertex AI Agent Builder / Agentspace, folded at Cloud Next April 2026). Do **not** say "Vertex" as the current name.
-- Cast AI 2026 report: average CPU utilization **8%** in 2025 (down from 10%); CPU overprovisioning **69%** (up from 40%). Disclose vendor interest: Cast AI sells optimization. Komodor saw the same direction. Framing: **marginal compute on capacity you already buy ≈ 0**. Substrate, GPUs, and ops still cost.
-- **30×** means **actors per warm worker via idle suspend / checkpoint**, e.g. 240 actors / 8 workers. It does **not** mean cheaper tokens, an SLA, or a benchmark you measured.
-- Security line: **"you can't compromise what's not running."** Mechanism: checkpoint/restore. Idle agent is a snapshot (RAM + filesystem), not a resident process. Isolation under it: **gVisor**.
-- Runtime pieces: **actor/worker model** (identity + lifecycle detached from a single pod; many agents share a worker pool), **checkpoint/restore**, **gVisor sandboxing**, **agentgateway** as the policy/traffic choke (not the sandbox itself).
-- kagent = CNCF Sandbox project for agents on Kubernetes. Agent Substrate is how kagent runs harness agents on the cluster you already pay for.
-- Simulation only. Never claim this is a live Kubernetes cluster.
-
-## Session anatomy the game must carry
-
-Part 1 — The Shift: PaaS path vs idle capacity already sitting in the cluster.
-Part 2 — Why K8s breaks: harness agents are not microservices. Identity / resources / lifecycle / idle were all bound to the pod. Over-provision or break the binding K8s assumed.
-Part 3 — Agent Substrate answers: actor/worker, checkpoint/restore, gVisor.
-Part 4 — Three value proofs (must be shown, not asserted):
-1. Scaling efficiency — same arithmetic, then worker-pool changes the bill.
-2. Security — idle is not a process.
-3. Scale — concurrent load on one worker pool.
-Part 5 — Live exercise: everyone joins via QR onto a standard agent, then gets shifted onto Agent Substrate. Pete owns production QR; this repo is the rehearsal.
-
-Facilitator click order:
-Briefing → Wave 1 (amber idle waste) → Wave 2 (ceiling) → people join on phones → Probe (pwn idle pods) → Flip Substrate → phones become snapshots/actors → Probe again (nothing to hit) → Show 30×.
-
-## Repo (source of truth)
-
+Repo (source of truth):
 https://github.com/sebbycorp/agent-substrate-command-center
+Owner: sebbycorp. Branch: main. Last known SHA when this prompt was written: `0e02fd30e6feee1b05e63f0d56e2bcee15aa269b`.
 
-Files on main as of 2026-09-17:
-
-| File | What it is | Status |
-|---|---|---|
-| `index.html` | Cinematic command-center HUD. Dark ops, gateway aperture, racks, meters, briefing overlay, Wave/Flip/Probe/30×. Works `file://`. | Solo sim. **Not wired** to `/api/state`. No QR. |
-| `join.html` | Phone UI. You ARE the agent. Jack in / Wake / Rest. Polls `/api/state`. | Works when `server.py` is up. |
-| `rts.html` | StarCraft-ish canvas field. Drag-select, RMB move, train, raid, flip, vault. | Local only. **Not bound** to phone state. |
-| `server.py` | Python 3 stdlib. `0.0.0.0:8765`. GET `/` `/join` `/api/state`. POST `/api/join` `/api/me` `/api/host`. | Does **not** serve `/rts`. Does **not** inject live JS into the HUD. |
-| `README.md` | Run notes. | Stale vs StarCraft surface. |
-
-No npm. No K8s. No build step.
-
-## Run
-
-Solo HUD: `open index.html`
-Solo field: `open rts.html`
-Room: `python3 server.py` then projector `http://localhost:8765` and phones `http://<lan-ip>:8765/join`
-
-Venue gotcha: guest Wi-Fi client isolation blocks phone→laptop. Use staff SSID or a hotspot.
-
-## Shared protocol (keep this, do not invent a second one)
-
-```
-GET  /api/state  → {mode, agents[{id,name,source,status,node}], queue, joinUrl, metrics}
-POST /api/join   {name} → {ok, agent, mode}
-POST /api/me     {id, action: "work"|"idle"}
-POST /api/host   {action: "wave1"|"wave2"|"wave3"|"flip"|"probe"|"reset"|"show30"}
+Run:
+```bash
+git clone https://github.com/sebbycorp/agent-substrate-command-center.git
+cd agent-substrate-command-center
+open rts.html          # StarCraft field (projector)
+open index.html        # briefing HUD (solo, file://)
+python3 server.py      # room mode: HUD + phones, port 8765
 ```
 
-Agent status: `active` | `idle` | `checkpointed` | `compromised` | `queued`
-Classic cap: 4 nodes × 6 pods = 24.
-Substrate: 8 warm gVisor workers. Extra agents checkpoint.
+## Session brief you must honor (Parts 1–5)
 
-## StarCraft language (visual grammar, not Blizzard assets)
+### Part 1 — The Shift
+Alternative path (context):
+- AWS Bedrock AgentCore GA October 2025. SDK passed 2 million downloads within 5 months of preview.
+- Google ADK (framework under what became **Gemini Enterprise Agent Platform**, formerly Vertex AI Agent Builder / Agentspace) passed 4.7 million downloads.
+- Google folded Vertex AI Agent Builder and Agentspace into Gemini Enterprise Agent Platform at Cloud Next April 2026. Use current name. "Formerly Vertex AI" parenthetical is OK. Never say "Vertex" as the current product name on stage.
+- These are download/adoption proxies, NOT revenue or customer-count growth rates. Do not say "growth rate" unless you mean SDK downloads.
 
-| SC | This mission | Line to say |
-|---|---|---|
-| Minerals / supply | Reserved $ / pod slots | Capacity you already bought |
-| "Additional pylons" | "You must construct additional pods." | Concurrency ceiling |
-| Barracks 1:1 | Classic agent-per-pod | Identity glued to the building |
-| Idle bio on creep | Amber units standing on a node | Idle headroom — billed, raidable |
-| Runby / snipe | Probe | Resident process is the surface |
-| Morph Lair / warp-in | Flip Substrate | Same map, new production rules |
-| Burrow / stasis | Checkpoint vault | No process on the field |
-| Gateway | agentgateway choke | Traffic still inspected |
-| Pop cheat | 30× | 240 actors / 8 workers via suspend |
+Capacity already sitting there:
+- Cast AI 2026 report (tens of thousands of production clusters): average CPU utilization 8% in 2025 (down from 10%); CPU overprovisioning 69% (up from 40%).
+- Disclose source interest: Cast AI sells cluster optimization. Komodor found similar direction. Likely right; not neutral.
+- Accurate frame: *marginal* compute cost of running agents on capacity you already pay for can be near zero. Substrate itself, possible GPU node pools, and ops overhead still cost money. Never say "free."
 
-Wanted HUD: top resource/supply bar, bottom portrait + command card + minimap, adjutant toasts, drag-select, RMB attack-move, hotkeys (T train, W a-move, I hold, R burrow, F morph, P probe, Ctrl+1-4 groups).
+### Part 2 — Why Kubernetes breaks
+Harness agents are not stateless microservices.
+Anatomy that must stay visible:
+- Identity: microservice bound to pod/SA. Agent identity must survive the process. Session ≠ pod.
+- Resources: microservice sized for steady load. Agent bursts then idles. A full pod reserved for nothing = idle headroom.
+- Lifecycle: microservice = one long-lived process per pod. Agent = spin up, work, checkpoint, maybe a new process next time.
+- Idle: microservice still running. Agent should leave the worker and become a snapshot.
+If identity is glued to the pod you either over-provision (pod sits idle waiting) or you break the binding Kubernetes assumed you would keep.
+Named meters: **idle headroom** and **concurrency ceiling**.
 
-## What to build next (in this order)
+### Part 3 — How Agent Substrate answers it
+- Actor/worker model: agent identity + lifecycle decoupled from any single pod. Many agents share a WorkerPool.
+- Checkpoint/restore: what happens to agent state between spin-up and spin-down. This is the mechanic that makes the security story possible.
+- gVisor sandboxing: isolation under the actors.
+- agentgateway: inspects/guards traffic *into* the sandbox. Sandbox-alone is not the whole security story.
+kagent = how this runs on Kubernetes you already have (CNCF sandbox project context is fine; do not invent APIs).
 
-1. Wire `index.html` to `/api/state` when served by `server.py`. Show QR + join URL. Host buttons POST `/api/host`. Keep `file://` fallback.
-2. Serve `rts.html` at `/rts`. Same API. Phone joins appear as named units on the field.
-3. Finish the StarCraft command console on `rts.html` (portrait, command card, minimap, adjutant, control groups) without stealing Blizzard art.
-4. Probe must visibly snipe **idle field units only** in classic; Substrate vaulted units are off-map and survive.
-5. After Flip, phone copy must change: classic idle = "still resident"; substrate checkpoint = "no process."
-6. Keep briefing overlay with locked Part 1 names/numbers.
-7. Do not require a real cluster. Do not add npm unless asked.
-8. Update README with HUD vs RTS vs room instructions.
+### Part 4 — Three value proofs (show, do not assert)
+1. Scaling efficiency: same arithmetic as Part 1, then WorkerPool changes the unit of cost from pod-per-agent to warm workers.
+2. Security: "you cannot compromise what is not running." Mechanism = checkpoint/restore. Idle agent is not a resident process.
+3. Scale: concurrent load on a single worker pool. Strongest live demo. Room should watch it happen.
 
-## Out of scope unless asked
+30× = design point of actors per warm worker via idle suspend/restore (e.g. 240 actors / 8 workers). SIM, not an SLA, NOT 30× cheaper tokens.
 
-Pete's production QR path. Real kagent / Agent Substrate / Agent Gateway wiring. Token-cost claims. New product names.
+### Part 5 — Live exercise
+Everyone joins via QR onto a standard (classic) agent, then gets shifted onto Agent Substrate, watching cost/density change. Pete is building a production QR path; this repo is the rehearsal. Status-check Pete separately. Do not block the game on Pete.
+
+## Files in the repo now
+
+| File | Role |
+|---|---|
+| `index.html` | Cinematic briefing HUD. Local JS sim. 4 nodes, waves, flip, probe, Show 30×, anatomy table, named meters, agentgateway strip. `file://` works. Does **not** poll `/api/state` unless you wire it. |
+| `rts.html` | StarCraft-shaped battlefield. Command console, minerals/gas/supply, minimap, portrait, 3x3 command card, advisor toasts, hotkeys, control groups. Classic = barracks 1:1. Substrate = hatchery/WorkerPool + burrow vault. |
+| `join.html` | Phone UI. You ARE the agent. Wake / Rest. Status copy changes after flip/probe. |
+| `server.py` | Python 3 stdlib only. `0.0.0.0:8765`. Source of truth for room agents. `GET /api/state` `POST /api/join` `POST /api/me` `POST /api/host`. Serves `index.html` and `join.html`. Does **not** yet serve `rts.html` as `/`. |
+| `README.md` | Short run notes. Stale vs StarCraft surface — update when you change entrypoints. |
+| `PROMPT.md` | This handoff. |
+
+Known gap: `index.html` local sim and `server.py` room state can diverge. Phone names may not appear as cells on the HUD unless you connect render() to `/api/state` or inject a live.js roster + QR. Guest Wi-Fi client isolation blocks phone→laptop; hotspot fallback required.
+
+## Game surfaces (keep all three, do not collapse until asked)
+
+1. Briefing HUD (`index.html`) — talk track + meters + anatomy.
+2. StarCraft field (`rts.html`) — the thing the room leans into.
+3. Handset (`join.html`) — each phone is one harness agent.
+
+Preferred room path: briefing 90 seconds on HUD or overlay → switch projector to `rts.html` → phones join → probe → morph/flip → probe → 30×.
+
+## StarCraft mapping (locked fiction)
+
+Do not ship Blizzard assets or copyrighted audio. "StarCraft-shaped" only.
+
+- Minerals = reserved cluster $ (sim)
+- Gas = useful CPU / scarce GPU-ops (not free)
+- Supply = classic pods. Adjutant: **"You must construct additional pods."**
+- Barracks on each of 4 nodes = agent-per-pod Kubernetes
+- Standing idle bio = idle headroom, raidable
+- Probe raid = kills idle field units in classic; misses burrowed snapshots
+- Morph / Lair = Flip to Agent Substrate (same map, new production rules)
+- Hatchery / 8 warm Gateways = WorkerPool of 8 gVisor workers
+- Burrow / stasis vault = checkpoint/restore. Off-map. No process.
+- Warp-in = restore onto a warm worker through agentgateway
+- agentgateway = north-map choke. Every session is inspected.
+- 30× = actors per worker via burrow, not cheaper tokens
+- Phones = units the player did not train
+
+Hotkeys already in `rts.html`: A train, G raid, F morph, P probe, R/I recall, 3 for 30×, Esc reset, Ctrl+1-9 control groups. LMB drag-select, RMB move/attack-move.
+
+## Simulation constants (do not change without labeling SIM)
+
+- 4 nodes
+- Classic: 6 pod slots/node = 24 cap
+- Substrate: 8 warm workers
+- Design point 240 actors / 8 workers ≈ 30×
+- Sim hourly: ~$0.12 per resident classic pod; workers * 0.12 + snapshot * ~0.003 after flip
+
+## Product language lock
+
+Use: Agent Substrate, kagent, WorkerPool, actor, checkpoint/restore, gVisor, agentgateway, harness agent.
+Do not invent Solo APIs, CRD names, or pricing.
+Do not promise live Kubernetes or real gVisor in this MVP. Label SIM / enablement.
+Do not build a real cluster for the offsite unless explicitly asked.
+
+## What to build next (priority order)
+
+1. Make `rts.html` the room entrypoint. `server.py` should serve it at `/` or `/rts` and keep `/hud` → `index.html`, `/join` → `join.html`.
+2. Wire phones onto the StarCraft field: `POST /api/join` spawns a named unit; flip/probe/recall update that unit and the handset copy.
+3. Put a live QR + join URL on the field (minimap rail). QR image may use qrserver.com; always show the raw URL for client-isolated Wi-Fi.
+4. Unify state. One snapshot: `{mode, agents[{id,name,source,status,node,place}], queue, metrics}`. HUD, field, and phones all render it.
+5. Improve StarCraft feel without new claims: build queue bar, attack-move onto raid packets, selected-unit command highlighting, better adjutant VOICE text (text only), control-group banners, camera pan optional.
+6. Facilitator notes in README: click order, what to say at amber idle, probe, morph, second probe, 30×.
+7. Optional zombie skin is only the raid packets (horde through the gateway), not a rewrite.
+8. Do not block on Pete's production QR. Leave a stub note "Pete live-join is not this file."
+
+## Facilitator click order
+
+Briefing → Wave/Train until amber idle is obvious → Wave into the supply ceiling → "scan now" phones join as classic agents → Probe (PWNED idle) → Morph/Flip → phones read SNAPSHOT / gVisor → Probe again (miss) → Show 30× if you need the density punch.
 
 ## Tone
 
-Cinematic, enablement-sharp, a little dangerous. Cooler than a dashboard. Still a teaching tool first.
+Cinematic, projector-legible, slightly brutalist command console. Cooler than a metrics dashboard. No walls of paragraph copy on the field. Claims stay in the briefing overlay and adjutant one-liners.
+
+When you change files, commit to `sebbycorp/agent-substrate-command-center` main if the user still has GitHub connected; otherwise write the full HTML/Python into the reply so they can paste.
+
+Start by reading the current repo files, then implement ticket 1 + 2 as the next MVP slice.
