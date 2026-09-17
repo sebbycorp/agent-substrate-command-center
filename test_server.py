@@ -166,7 +166,7 @@ class RoomHttpTests(unittest.TestCase):
         self.assertIn(b"SUBSTRATE COMMAND", body)
         status, body, _ = self._get("/join")
         self.assertEqual(status, 200)
-        self.assertIn(b"YOU ARE THE AGENT", body)
+        self.assertIn(b"YOU ARE ONE AGENT", body)
 
     def test_api_join_then_state_and_probe_copy_contract(self):
         status, payload = self._post("/api/join", {"name": "Ada"})
@@ -208,8 +208,15 @@ class SurfaceContractTests(unittest.TestCase):
 
     def test_join_copy_covers_pwn_and_snapshot(self):
         text = ROOT.joinpath("join.html").read_text(encoding="utf-8")
-        self.assertIn("PWNED", text)
-        self.assertIn("snapshot", text.lower())
+        self.assertIn("You are one agent", text)
+        self.assertIn("Your name appears on the big screen", text)
+        self.assertIn("You're running on your own pod.", text)
+        self.assertIn("You're idle but still running", text)
+        self.assertIn("PWNED — you were still running.", text)
+        self.assertIn("You're awake on a shared worker.", text)
+        self.assertIn("You're a snapshot — nothing running to attack.", text)
+        self.assertIn("Wake up", text)
+        self.assertIn("Go to sleep", text)
         self.assertIn("/api/state", text)
         self.assertIn("/api/me", text)
 
@@ -218,6 +225,52 @@ class SurfaceContractTests(unittest.TestCase):
         self.assertIn("/api/state", text)
         self.assertIn("/api/host", text)
         self.assertIn("Pete live-join is not this file", text)
+
+    def test_rts_room_copy_is_projector_legible(self):
+        text = ROOT.joinpath("rts.html").read_text(encoding="utf-8")
+        self.assertIn("Run agents on the Kubernetes you already pay for.", text)
+        self.assertIn("A sandbox is an isolated place", text)
+        self.assertIn("1 agent owns 1 pod even while idle", text)
+        self.assertIn("Idle agents still own a pod — that's the waste.", text)
+        self.assertIn("PWNED — the process was still running.", text)
+        self.assertIn("Same nodes. Now idle agents sleep as snapshots — no process.", text)
+        self.assertIn("Miss — nothing running to attack.", text)
+        self.assertIn("30× means more agents per worker by sleeping idle ones — not cheaper tokens.", text)
+        self.assertIn("This is a SIM for enablement — not a live cluster.", text)
+        self.assertIn("CLASSIC · 1 AGENT = 1 POD", text)
+        self.assertIn("SUBSTRATE · SHARED WORKERS", text)
+        self.assertIn("A Add agents", text)
+        self.assertIn("W Wake", text)
+        self.assertIn("I Sleep", text)
+        self.assertIn("G Send load", text)
+        self.assertIn("F Flip to Substrate", text)
+        self.assertIn("P Attack idle", text)
+        self.assertIn("R Sleep selected", text)
+        self.assertIn("3 Show 30×", text)
+        self.assertIn("NODE · pods", text)
+        self.assertIn("NODE · workers", text)
+        self.assertIn("SLEEPING AGENTS", text)
+        self.assertIn("You must construct additional pods.", text)
+        self.assertIn("front door for agent traffic", text.lower())
+        self.assertNotIn("Bedrock", text)
+        self.assertNotIn("Cast AI", text)
+        self.assertNotIn("TERRAN / CLASSIC K8S", text)
+        self.assertNotIn("ZERG / AGENT SUBSTRATE", text)
+
+    def test_hud_keeps_shortened_paas_stats(self):
+        text = ROOT.joinpath("index.html").read_text(encoding="utf-8")
+        self.assertIn("Bedrock", text)
+        self.assertIn("Cast AI", text)
+        self.assertIn("Gemini Enterprise Agent Platform", text)
+        self.assertIn("formerly Vertex AI", text)
+        self.assertIn("Add agents. Sleep them. Attack idle.", text)
+        self.assertNotIn("fire Wave 1 and wait for the amber", text)
+
+    def test_readme_has_room_talk_track(self):
+        text = ROOT.joinpath("README.md").read_text(encoding="utf-8")
+        self.assertIn("What the room should hear", text)
+        self.assertIn("Idle agents still own a pod", text)
+        self.assertIn("nothing running to attack", text)
 
     def test_no_duplicate_starcraft_field_file(self):
         self.assertFalse((ROOT / "sc.html").exists())

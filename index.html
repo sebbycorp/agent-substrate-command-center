@@ -138,23 +138,18 @@ body.shake main{animation:shake .35s linear}
 <div class="flash" id="flash"></div>
 <div class="overlay" id="overlay">
   <div class="sheet">
-    <div class="kicker">SOLO ENABLEMENT // CLASSIFIED SIM</div>
-    <h3>RUN THE AGENTS ON THE CLUSTER YOU ALREADY PAY FOR.</h3>
-    <p class="muted">Harness agents are not microservices. Kubernetes married identity, resources, and lifecycle to the pod. That worked for a decade. It does not fit a workload that bursts, checkpoints, and may not be the same process next time. Agent Substrate is how kagent runs that class on your platform instead of sending it to a cloud agent PaaS.</p>
-    <h2>Alternative path</h2>
-    <p>AWS Bedrock AgentCore GA Oct 2025 — SDK 2M downloads in 5 months of preview. Google ADK 4.7M downloads under what is now <b>Gemini Enterprise Agent Platform</b> (formerly Vertex AI Agent Builder / Agentspace). Adoption proxies. Not revenue. Do not say Vertex as the current name.</p>
-    <h2>Idle capacity</h2>
-    <p class="muted">Cast AI 2026: 8% avg CPU util, 69% overprovision. They sell optimization. Komodor saw the same direction. Marginal compute on capacity you already buy ≈ 0. Substrate, GPUs, and ops still cost.</p>
-    <h2>Anatomy</h2>
+    <div class="kicker">HUD // ENABLEMENT SIM</div>
+    <h3>Run agents on the Kubernetes you already pay for.</h3>
+    <p class="muted">A sandbox is an isolated place for an agent to work — no permanent pod. Classic: 1 agent owns 1 pod even while idle. Substrate: many agents share warm workers; idle agents become snapshots (no process). You cannot compromise what is not running. agentgateway is the front door.</p>
+    <p>Bedrock AgentCore SDK: 2M downloads in 5 months of preview. Google ADK: 4.7M under <b>Gemini Enterprise Agent Platform</b> (formerly Vertex AI Agent Builder / Agentspace). Download proxies, not revenue. Cast AI 2026: 8% CPU, 69% overprovision — they sell optimization. Marginal compute on capacity you already pay for can be near zero. Substrate, GPUs, and ops still cost. Never say free.</p>
     <table>
-      <tr><th></th><th>Microservice</th><th>Harness agent</th></tr>
-      <tr><td>Identity</td><td>Bound to the pod</td><td>Must survive the process</td></tr>
-      <tr><td>Resources</td><td>Steady load</td><td>Burst, then idle — a reserved empty room</td></tr>
-      <tr><td>Lifecycle</td><td>One long-lived process</td><td>Spin up → work → checkpoint → maybe a new process</td></tr>
-      <tr><td>Idle</td><td>Still running</td><td>Should be a snapshot, not a resident process</td></tr>
+      <tr><th></th><th>Classic</th><th>Substrate</th></tr>
+      <tr><td>Idle</td><td>Still running</td><td>Snapshot — no process</td></tr>
+      <tr><td>Security</td><td>Attackable</td><td>Can't compromise what's not running</td></tr>
+      <tr><td>Density</td><td>1 agent = 1 pod</td><td>Many agents per worker</td></tr>
     </table>
-    <p class="muted">30× later = actors per warm worker via idle suspend. Not cheaper tokens. SIM.</p>
-    <button class="btn go" id="btnEnter">Initialize command</button>
+    <p class="muted">This is a SIM for enablement — not a live cluster. 30× means more agents per worker by sleeping idle ones — not cheaper tokens.</p>
+    <button class="btn go" id="btnEnter">Start</button>
   </div>
 </div>
 <div class="shell">
@@ -166,9 +161,9 @@ body.shake main{animation:shake .35s linear}
         <div class="hsub">KAGENT · AGENT SUBSTRATE · AGENTGATEWAY · 4 NODES LIVE</div>
       </div>
     </div>
-    <div class="badge" id="phase"><b>PHASE 01 // CLASSIC K8S</b><span>1 agent = 1 pod</span></div>
+    <div class="badge" id="phase"><b>CLASSIC · 1 AGENT = 1 POD</b><span>Idle still owns a pod</span></div>
   </header>
-  <div class="coach" id="coach"><strong>COACH</strong> — fire Wave 1 and wait for the amber. The waste is the lesson.</div>
+  <div class="coach" id="coach"><strong>COACH</strong> — Add agents. Sleep them. Attack idle. That's the waste.</div>
   <main>
     <aside class="card">
       <h2>Anatomy lock</h2>
@@ -179,19 +174,19 @@ body.shake main{animation:shake .35s linear}
         <tr><td>Life</td><td>Process</td><td>Checkpoint</td></tr>
         <tr><td>Idle</td><td>Resident</td><td>Snapshot</td></tr>
       </table>
-      <p class="muted">PaaS path exists because agent-per-pod Kubernetes was not built for this. Substrate keeps the work on the cluster you already run.</p>
+      <p class="muted">Classic wastes a pod per idle agent. Substrate sleeps them as snapshots. agentgateway is the front door.</p>
     </aside>
     <section class="card">
       <h2>Inbound</h2>
       <div class="portal">
         <div class="label">AGENTGATEWAY</div>
-        <div class="status" id="gw">Aperture closed. Await wave.</div>
+        <div class="status" id="gw">agentgateway closed. Add agents.</div>
         <div class="arch"></div>
       </div>
       <div class="lane" id="lane"></div>
       <div class="nodes" id="nodes"></div>
       <div class="vault" id="vault" style="display:none">
-        <div class="muted" style="margin-bottom:6px">SNAPSHOT VAULT · RAM + FILESYSTEM · NO PROCESS</div>
+        <div class="muted" style="margin-bottom:6px">SLEEPING AGENTS · no process</div>
         <div class="slots" id="snaps"></div>
       </div>
     </section>
@@ -215,7 +210,7 @@ body.shake main{animation:shake .35s linear}
         <div class="metric"><b id="mC">0%</b><span>CPU</span></div>
         <div class="metric"><b id="m$">$0.00</b><span>Sim burn</span></div>
       </div>
-      <p class="muted" id="note">30× is actors/worker via suspend. Show it after the flip.</p>
+      <p class="muted" id="note">Idle still owns a pod — density stuck at 1×.</p>
       <h2>Log</h2>
       <div class="log" id="log"></div>
     </aside>
@@ -224,8 +219,8 @@ body.shake main{animation:shake .35s linear}
     <button class="btn go" id="w1">Wave 1</button>
     <button class="btn" id="w2">Wave 2</button>
     <button class="btn" id="w3">Wave 3</button>
-    <button class="btn" id="flip">Flip Substrate</button>
-    <button class="btn hot" id="atk">Probe</button>
+    <button class="btn" id="flip">Flip to Substrate</button>
+    <button class="btn hot" id="atk">Attack idle</button>
     <button class="btn" id="room">Room</button>
     <button class="btn" id="x30">Show 30×</button>
     <button class="btn dim" id="rst">Reset</button>
@@ -247,8 +242,8 @@ function pip(){const p=document.createElement("div");p.className="pip";document.
 function phase(){
   const sub=S.mode==="substrate";
   document.body.classList.toggle("substrate",sub);
-  $("phase").innerHTML=sub?"<b>PHASE 02 // SUBSTRATE</b><span>8 gVisor workers · identity detached</span>":"<b>PHASE 01 // CLASSIC K8S</b><span>1 agent = 1 pod</span>";
-  $("coach").innerHTML=sub?"<strong>COACH</strong> — same four nodes. Snapshots have no process. Show 30×. Probe again.":"<strong>COACH</strong> — Wave 1 until amber. Wave 2 into the ceiling. Probe. Then flip.";
+  $("phase").innerHTML=sub?"<b>SUBSTRATE · SHARED WORKERS</b><span>8 warm workers · idle = snapshot</span>":"<b>CLASSIC · 1 AGENT = 1 POD</b><span>Idle still owns a pod</span>";
+  $("coach").innerHTML=sub?"<strong>COACH</strong> — Same nodes. Snapshots have no process. Attack idle again. Then Show 30×.":"<strong>COACH</strong> — Add agents. Sleep them. Attack idle. Then flip.";
   $("vault").style.display=sub?"block":"none";
   $("mUl").textContent=sub?"Warm workers":"Resident pods";
   $("hL").textContent=sub?"Idle headroom — snapshots do not reserve pods":"Idle headroom — pods reserved while idle";
@@ -276,20 +271,20 @@ function render(){
   $("mA").textContent=ag;$("mU").textContent=units;$("mD").textContent=density.toFixed(1)+"×";$("mQ").textContent=S.queue;
   $("mC").textContent=Math.round(cpu)+"%";$("m$").textContent="$"+cost.toFixed(2);
   $("pF").style.width=cpu+"%";$("hF").style.width=Math.min(100,head)+"%";$("cF").style.width=Math.min(100,ceil)+"%";
-  $("note").textContent=S.mode==="classic"?"Density locked at 1× because idle still owns a pod.":"Design point 30× = 240 actors / 8 workers via suspend. SIM, not an SLA.";
+  $("note").textContent=S.mode==="classic"?"Idle still owns a pod — density stuck at 1×.":"30× means more agents per worker by sleeping idle ones — not cheaper tokens.";
 }
 function admit(){
   S.seq++;pip();const tag=document.createElement("div");tag.className="tag";tag.textContent="S"+String(S.seq).padStart(3,"0");$("lane").appendChild(tag);while($("lane").children.length>8)$("lane").removeChild($("lane").firstChild);
   if(S.mode==="classic"){
-    if(live().length>=CAP){S.queue++;log("CEILING // no free pod");gw("HOLD — no sandbox slot");beep(140,.1);return}
+    if(live().length>=CAP){S.queue++;log("CEILING // You must construct additional pods.");gw("HOLD — no free pod");beep(140,.1);return}
     const node=Math.floor(live().length/SLOTS);
     S.agents.push({id:"A"+String(S.seq).padStart(2,"0"),node,status:"active"});
-    log("BIND // "+S.agents.at(-1).id+" → node-"+node);gw("ALLOW → pod. Process is the identity.");beep(520,.04);
+    log("BIND // "+S.agents.at(-1).id+" → own pod");gw("In through agentgateway — onto its own pod.");beep(520,.04);
   }else{
     if(live().length>=WORKERS){const v=idle()[0];if(v){v.status="checkpointed";v.node=-1;log("SNAP // "+v.id)}else{S.queue++;log("POOL BUSY");gw("HOLD — workers live");return}}
     const c=[0,0,0,0];live().forEach(a=>c[a.node]++);let node=0,best=99;for(let i=0;i<4;i++) if(c[i]<best){best=c[i];node=i}
     S.agents.push({id:"A"+String(S.seq).padStart(2,"0"),node,status:"active"});
-    log("RESTORE // "+S.agents.at(-1).id+" gVisor n-"+node);gw("ALLOW → gVisor actor. Gateway is the guard.");beep(740,.04);
+    log("RESTORE // "+S.agents.at(-1).id+" on a shared worker");gw("In through agentgateway — onto a shared worker.");beep(740,.04);
   }
 }
 function drain(){while(S.queue>0){const b=S.queue;S.queue--;admit();if(S.queue>=b)break}}
@@ -301,7 +296,7 @@ function flip(){
   if(S.mode==="classic"){
     S.mode="substrate";
     S.agents.forEach((a,i)=>{if(a.status==="compromised")a.status="idle";if(i<WORKERS&&a.status==="active"){a.node=i%NODES}else{a.status="checkpointed";a.node=-1}});
-    drain();log("FLIP // WorkerPool=8 · SandboxAgent/AgentHarness → actors");gw("APERTURE retargeted — Substrate online");beep(880,.2);
+    drain();log("FLIP // Same nodes. Now idle agents sleep as snapshots — no process.");gw("Same nodes. Snapshots have no process.");beep(880,.2);
   }else{
     S.mode="classic";const keep=[];S.queue=0;
     S.agents.forEach(a=>{if(keep.length<CAP){a.status=a.status==="active"?"active":"idle";a.node=Math.floor(keep.length/SLOTS);keep.push(a)}else S.queue++});
@@ -313,11 +308,11 @@ function attack(){
   document.body.classList.add("shake");setTimeout(()=>document.body.classList.remove("shake"),360);beep(90,.2);
   if(S.mode==="classic"){
     const t=idle();if(!t.length){log("PROBE // wait for idle processes");return}
-    t.forEach(a=>a.status="compromised");log("PROBE // "+t.length+" idle pods PWNED — process still there");gw("LOGGED. Surface was the resident process.");
+    t.forEach(a=>a.status="compromised");log("PROBE // PWNED — the process was still running");gw("PWNED — the process was still running.");
   }else{
-    log("PROBE // "+snaps().length+" snapshots have no process");
-    if(act().length) log("PROBE // "+act().length+" live actors inside gVisor — gateway DROP");
-    gw("DROP. You cannot compromise what is not running.");
+    log("PROBE // Miss — nothing running to attack.");
+    if(act().length) log("PROBE // live actors sit behind agentgateway");
+    gw("Miss — nothing running to attack.");
   }
   render();
 }
@@ -326,7 +321,7 @@ function x30(){
   if(S.mode!=="substrate"){log("30x // flip first");return}
   const need=240-S.agents.length;for(let i=0;i<need;i++){S.seq++;S.agents.push({id:"X"+S.seq,node:-1,status:"checkpointed"})}
   for(let w=0;w<WORKERS;w++){if(S.agents[w]){S.agents[w].status="active";S.agents[w].node=w%NODES}}
-  log("30x // 240 actors / 8 workers. Suspend oversubscription. SIM.");gw("POOL holding 240 logical agents");flash();render();
+  log("30x // more agents per worker by sleeping idle ones — not cheaper tokens");gw("30× = density, not cheaper tokens");flash();render();
 }
 function reset(){clearInterval(S.tick);Object.assign(S,{mode:"classic",tick:0,seq:0,queue:0,agents:[]});$("lane").innerHTML="";$("log").innerHTML="";phase();gw("Aperture closed.");log("RESET");render()}
 const ROOM=location.protocol!=="file:";
@@ -337,9 +332,9 @@ function applySnap(s){
 async function host(action){
   const s=await fetch("/api/host",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action})}).then(r=>r.json());
   applySnap(s);
-  if(action==="probe") log(S.mode==="classic"?"PROBE // idle pods PWNED":"PROBE // snapshots have no process");
-  if(action==="flip") log(S.mode==="substrate"?"FLIP // WorkerPool=8":"FLIP // barracks");
-  if(action==="show30") log("30x // 240 actors / 8 workers. SIM.");
+  if(action==="probe") log(S.mode==="classic"?"PROBE // PWNED — the process was still running":"PROBE // Miss — nothing running to attack.");
+  if(action==="flip") log(S.mode==="substrate"?"FLIP // Same nodes. Now idle agents sleep as snapshots — no process.":"FLIP // Back to classic. One agent still owns one pod.");
+  if(action==="show30") log("30x // more agents per worker by sleeping idle ones — not cheaper tokens");
   if(action==="reset"){$("lane").innerHTML=""; log("RESET")}
 }
 async function pull(){
