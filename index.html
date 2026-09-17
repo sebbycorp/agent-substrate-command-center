@@ -136,7 +136,7 @@ body.shake main{animation:shake .35s linear}
 </head>
 <body>
 <div class="flash" id="flash"></div>
-<div class="overlay" id="overlay">
+<div class="overlay hide" id="overlay">
   <div class="sheet">
     <div class="kicker">HUD // ENABLEMENT SIM</div>
     <h3>Run agents on the Kubernetes you already pay for.</h3>
@@ -370,7 +370,8 @@ $("room").onclick=()=>{ if(ROOM) location.href="/"; else log("ROOM // python3 se
 $("x30").onclick=()=>ROOM?host("show30"):x30();
 $("rst").onclick=()=>ROOM?host("reset"):reset();
 phase();log(ROOM?"ROOM // shared state with the field":"ONLINE // sim only");render();
-if(ROOM){ $("overlay").classList.add("hide"); pull(); setInterval(pull,400); }
+if(ROOM){ pull(); setInterval(pull,400); }
+else $("overlay").classList.remove("hide");
 </script>
 </body>
 </html>
