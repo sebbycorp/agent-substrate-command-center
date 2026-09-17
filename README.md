@@ -2,7 +2,16 @@
 
 Room-scale sales-enablement game. StarCraft-shaped field + briefing HUD + phones as harness agents. No npm. No cluster. Label **SIM**.
 
-Learning goal is not only “under attack.” The sandbox is an isolated place for harness agents to work without permanent pods. Agent Substrate is how you run many agents on Kubernetes you already pay for (actor off the pod, warm workers, checkpoint when idle) instead of a cloud agent PaaS. Security (“you cannot compromise what is not running”) is one of three proofs, with density and cost.
+A sandbox is an isolated place for an agent to work without a permanent pod. Classic Kubernetes gives each agent its own pod even while idle. Agent Substrate lets many agents share warm workers; idle agents become snapshots (no process). Security, density, and cost are the three proofs. agentgateway is the front door.
+
+## What the room should hear
+
+1. A sandbox is an isolated place for an agent to work — no permanent pod.
+2. Classic: Idle agents still own a pod — that's the waste, and it's attackable.
+3. Substrate: many agents share warm workers. Idle agents become snapshots — no process.
+4. Attack idle: PWNED — the process was still running.
+5. Flip: same nodes. Now idle agents sleep as snapshots. Attack again: miss — nothing running to attack.
+6. 30× means more agents per worker by sleeping idle ones — not cheaper tokens. agentgateway is the front door.
 
 ## Room mode (LAN host)
 
@@ -22,7 +31,7 @@ Opens `0.0.0.0:8765`.
 
 On the field, the minimap rail shows a live QR (qrserver.com) **and** the raw join URL. If guest Wi-Fi has client isolation, phones cannot reach the laptop — use a hotspot.
 
-Each phone **is an agent**. Jack in with a name to spawn a labeled unit on the field. Wake / Rest from the handset. Flip, Probe, Idle, Recall, Work from the big screen. One snapshot drives HUD, field, and phones.
+Each phone **is one agent**. Join with a name to spawn a labeled unit on the field. Wake up / Go to sleep from the handset. Flip, Attack idle, Sleep, Wake from the big screen. One snapshot drives HUD, field, and phones.
 
 Pete live-join is not this file.
 
@@ -37,15 +46,15 @@ Local sim only. No phones, no QR.
 
 ## Facilitator click order
 
-1. Briefing on `/` overlay or `/hud` (~90s). Alternative path + idle capacity + anatomy. Do not say Vertex as the current name. Do not say free.
+1. 20-second briefing on `/` overlay (or `/hud` for PaaS stats). Do not say Vertex as the current name. Do not say free.
 2. Switch projector to the field if you briefed on `/hud`.
-3. **A Train** / **G Raid** until amber idle is obvious (hit **I Idle** so standing bio is gold).
+3. **A Add agents** / **G Send load** until idle is obvious (hit **I Sleep** so idle units go gold).
 4. Wave into the supply ceiling. Adjutant: “You must construct additional pods.”
 5. “Scan now” — phones join as classic agents (named triangles).
-6. **P Probe** — idle processes are **PWNED**. Handsets read PWNED.
-7. **F Morph** to Agent Substrate. Same map, WorkerPool + burrow vault. Phones read SNAPSHOT / gVisor.
-8. **P Probe** again — misses. Snapshots have no process.
-9. **3** Show 30× if you need the density punch (240 actors / 8 workers via burrow, not cheaper tokens).
+6. **P Attack idle** — **PWNED**. Handsets read PWNED — you were still running.
+7. **F Flip to Substrate**. Same nodes, shared workers, sleeping-agent vault. Phones read snapshot.
+8. **P Attack idle** again — miss. Nothing running to attack.
+9. **3 Show 30×** if you need the density punch (more agents per worker by sleeping idle ones, not cheaper tokens).
 
 ## Claims to keep
 

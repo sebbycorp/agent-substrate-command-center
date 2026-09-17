@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Join the fleet</title>
+<title>You are one agent</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 <style>
 :root{--teal:#3cf0d0;--amber:#ffbf47;--red:#ff3d5a;--ink:#e8fbff;--dim:#7f97a6}
@@ -27,17 +27,17 @@ button.hot{border-color:var(--amber);color:var(--amber)}
 </head>
 <body>
 <div class="kicker">SUBSTRATE // HANDSET</div>
-<h1>YOU ARE THE AGENT.</h1>
+<h1>YOU ARE ONE AGENT</h1>
 <div id="gate">
-  <div class="msg">Your session becomes a cell on the big screen. Same Wi-Fi as the projector.</div>
+  <div class="msg">Your name appears on the big screen. Same Wi‑Fi as the projector.</div>
   <input id="name" placeholder="your name" maxlength="18"/>
-  <button class="primary" id="go">Jack in</button>
+  <button class="primary" id="go">Join the screen</button>
 </div>
 <div id="pad" style="display:none">
   <div class="hero active" id="hero"><div>IDENTITY</div><b id="hid">-</b><div id="hstat">joining</div></div>
   <div class="msg" id="copy">Awaiting assignment.</div>
-  <button class="primary" id="work">Wake / do work</button>
-  <button class="hot" id="idle">Rest / go idle</button>
+  <button class="primary" id="work">Wake up</button>
+  <button class="hot" id="idle">Go to sleep</button>
 </div>
 <script>
 const $=id=>document.getElementById(id);
@@ -51,16 +51,16 @@ function paint(agent, m){
   $("hero").className="hero "+agent.status;
   const lines={
     classic:{
-      active:"You are a resident process. Identity is glued to this pod.",
-      idle:"You are idle and still running. This is the attack surface.",
-      queued:"No free pod. You wait because identity cannot leave the machine.",
-      compromised:"PWNED. Probe hit you. The process was still there."
+      active:"You're running on your own pod.",
+      idle:"You're idle but still running — attackers can hit you.",
+      queued:"No free pod. You're waiting.",
+      compromised:"PWNED — you were still running."
     },
     substrate:{
-      active:"Restored onto a warm gVisor worker. agentgateway allowed you in.",
-      idle:"Idle on a worker. Rest to checkpoint and free the slot.",
-      queued:"Worker pool busy. Waiting.",
-      checkpointed:"SNAPSHOT. You are a snapshot. No process. Nothing to compromise."
+      active:"You're awake on a shared worker.",
+      idle:"You're on a worker but idle. Sleep to become a snapshot.",
+      queued:"Workers are busy. You're waiting.",
+      checkpointed:"You're a snapshot — nothing running to attack."
     }
   };
   $("copy").textContent=((lines[mode]||lines.classic)[agent.status])||"";

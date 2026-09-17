@@ -9,7 +9,7 @@
 :root{--teal:#3dffc0;--gold:#e4c066;--red:#ff5a4e;--panel:#1a140c;--ink:#f3e6c4;--dim:#9a8660}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:"Share Tech Mono",monospace;overflow:hidden}
-body{display:grid;grid-template-rows:36px 1fr 188px}
+body{display:grid;grid-template-rows:36px 1fr 204px}
 #top{
   display:flex;align-items:center;justify-content:space-between;padding:0 12px;
   background:linear-gradient(#2a2214,#120e08);border-bottom:2px solid #5a4a28;color:var(--gold);
@@ -40,8 +40,9 @@ canvas{width:100%;height:100%;display:block}
 .wire{border:1px solid var(--gold);display:grid;place-items:center;font-family:Orbitron,sans-serif;color:var(--gold);font-size:11px}
 #cmds{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 #cmds button{
-  height:44px;background:#2a1e10;border:1px solid #7a6230;color:var(--gold);
-  font:11px/1 "Share Tech Mono",monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+  height:52px;background:#2a1e10;border:1px solid #7a6230;color:var(--gold);
+  font:10px/1.2 "Share Tech Mono",monospace;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+  white-space:normal;padding:4px 6px;
 }
 #cmds button:hover{background:#3a2a14}
 #cmds button.hot{border-color:var(--teal);color:var(--teal)}
@@ -58,12 +59,18 @@ canvas{width:100%;height:100%;display:block}
 #pete{font-size:8px;color:var(--dim);letter-spacing:.04em}
 .overlay{position:fixed;inset:0;background:rgba(2,4,8,.92);display:flex;align-items:center;justify-content:center;z-index:20;padding:22px}
 .overlay.hide{display:none}
-.sheet{width:min(860px,100%);max-height:92vh;overflow:auto;border:2px solid var(--gold);background:#120e08;padding:22px}
-.sheet h1{font-family:Orbitron,sans-serif;font-size:20px;letter-spacing:.08em;margin:8px 0 12px;color:#fff8d6}
-.sheet p,.sheet td{color:var(--dim);line-height:1.45;font-size:13px}
+.sheet{width:min(820px,100%);max-height:92vh;overflow:auto;border:2px solid var(--gold);background:#120e08;padding:22px}
+.sheet h1{font-family:Orbitron,sans-serif;font-size:22px;letter-spacing:.03em;margin:8px 0 10px;color:#fff8d6;line-height:1.2}
+.sheet p,.sheet td{color:var(--ink);line-height:1.4;font-size:15px}
+.sheet .lead{margin:8px 0 12px}
+.sheet ul{margin:8px 0 14px 1.2em;padding:0}
+.sheet li{color:var(--ink);font-size:16px;margin:8px 0;line-height:1.35}
+.sheet li b{color:#fff8d6}
 .sheet table{width:100%;border-collapse:collapse;margin:10px 0}
-.sheet th,.sheet td{border:1px solid #5a4a28;padding:6px;text-align:left}
-.sheet .go{height:40px;width:220px;background:var(--gold);color:#120e08;border:0;font-family:Orbitron,sans-serif;letter-spacing:.08em;cursor:pointer}
+.sheet th,.sheet td{border:1px solid #5a4a28;padding:8px;text-align:left;font-size:14px}
+.sheet th{color:var(--gold)}
+.sheet .sim{color:var(--gold);font-size:14px;margin:14px 0 16px}
+.sheet .go{height:44px;width:220px;background:var(--gold);color:#120e08;border:0;font-family:Orbitron,sans-serif;letter-spacing:.08em;cursor:pointer}
 .kicker{color:var(--gold);letter-spacing:.2em;font-size:11px}
 </style>
 </head>
@@ -71,27 +78,30 @@ canvas{width:100%;height:100%;display:block}
 <div class="overlay" id="brief">
   <div class="sheet">
     <div class="kicker">BRIEFING // OPERATION SUBSTRATE · SIM</div>
-    <h1>RUN HARNESS AGENTS ON THE CLUSTER YOU ALREADY PAY FOR.</h1>
-    <p>Harness agents are not stateless microservices. Kubernetes glued identity, resources, and lifecycle to the pod. Agent Substrate is how kagent runs that class on Kubernetes you already have — actor off the pod, warm workers, checkpoint when idle — instead of a cloud agent PaaS.</p>
-    <p>PaaS path (adoption proxies, not revenue): Bedrock AgentCore SDK 2M downloads in 5 months of preview. Google ADK 4.7M under <b>Gemini Enterprise Agent Platform</b> (formerly Vertex AI Agent Builder / Agentspace). Cast AI 2026: 8% CPU util, 69% overprovision (they sell optimization). Marginal compute on capacity you already pay for can be near zero. Substrate, GPU pools, and ops still cost. Never say free.</p>
+    <h1>Run agents on the Kubernetes you already pay for.</h1>
+    <p class="lead">A sandbox is an isolated place for an agent to work — no permanent pod.</p>
+    <ul>
+      <li><b>Classic:</b> 1 agent owns 1 pod even while idle — waste + attackable.</li>
+      <li><b>Substrate:</b> many agents share warm workers. Idle agents become snapshots (no process).</li>
+      <li><b>Phones:</b> you are one agent. agentgateway is the front door for agent traffic.</li>
+    </ul>
     <table>
-      <tr><th></th><th>Classic barracks</th><th>After morph · Substrate</th></tr>
-      <tr><td>Production</td><td>1 harness agent = 1 pod</td><td>WorkerPool of 8 gVisor workers · warp-in / restore</td></tr>
-      <tr><td>Idle</td><td>Standing bio · raidable process</td><td>Burrow vault · snapshot · no process</td></tr>
-      <tr><td>Security</td><td>Idle still running</td><td>You cannot compromise what is not running</td></tr>
-      <tr><td>30×</td><td>Density locked at 1×</td><td>240 actors / 8 workers via burrow. Not cheaper tokens.</td></tr>
+      <tr><th></th><th>Classic</th><th>Substrate</th></tr>
+      <tr><td>Idle</td><td>Still running</td><td>Snapshot — no process</td></tr>
+      <tr><td>Security</td><td>Attackable</td><td>Can't compromise what's not running</td></tr>
+      <tr><td>Density</td><td>1 agent = 1 pod</td><td>Many agents per worker</td></tr>
     </table>
-    <p>Sandbox purpose: an isolated place for harness agents to work without permanent pods. Density, cost, and security are the three proofs. Phones = units you did not train. Pete live-join is not this file.</p>
-    <button class="go" id="enter">START MISSION</button>
+    <p class="sim">This is a SIM for enablement — not a live cluster.</p>
+    <button class="go" id="enter">START</button>
   </div>
 </div>
 <div id="top">
-  <span>KOPRULU OPS · <b id="race">TERRAN / CLASSIC K8S</b></span>
+  <span>KOPRULU OPS · <b id="race">CLASSIC · 1 AGENT = 1 POD</b></span>
   <span>◈ MINERALS <b id="min">0</b> &nbsp; ◇ GAS <b id="gas">8</b> &nbsp; SUPPLY <b id="sup">0/24</b> &nbsp; DENSITY <b id="den">1.0×</b> &nbsp; PWNED <b id="pwn">0</b></span>
 </div>
 <div id="stage">
   <canvas id="c"></canvas>
-  <div id="advisor">Adjutant: field is quiet. Train, or scan phones onto the map.</div>
+  <div id="advisor">Add agents, or scan phones onto the field.</div>
   <div id="queuebar">BUILD QUEUE <span id="qtxt">0 waiting</span><i id="qbar"></i></div>
 </div>
 <div id="console">
@@ -112,14 +122,14 @@ canvas{width:100%;height:100%;display:block}
     </div>
   </div>
   <div id="cmds">
-    <button id="train">A Train</button>
-    <button id="work">W Work</button>
-    <button id="idle">I Idle / Burrow</button>
-    <button id="wave">G Raid</button>
-    <button id="flip" class="hot">F Morph Substrate</button>
-    <button id="probe" class="bad">P Probe</button>
-    <button id="recall">R Recall</button>
-    <button id="x30">3 30×</button>
+    <button id="train">A Add agents</button>
+    <button id="work">W Wake</button>
+    <button id="idle">I Sleep</button>
+    <button id="wave">G Send load</button>
+    <button id="flip" class="hot">F Flip to Substrate</button>
+    <button id="probe" class="bad">P Attack idle</button>
+    <button id="recall">R Sleep selected</button>
+    <button id="x30">3 Show 30×</button>
     <button id="reset">Esc Reset</button>
   </div>
 </div>
@@ -166,8 +176,8 @@ function hot(id){lastHot=id; document.querySelectorAll("#cmds button").forEach(b
 function paintPortrait(){
   const s=selected()[0];
   $("wire").textContent=s?s.name:"NO UNIT";
-  $("uname").textContent=s? (mode==="classic"?"MARINE / HARNESS AGENT":"ACTOR / WORKERPOOL"):"—";
-  $("ustat").textContent=s? (s.status.toUpperCase()+" · "+(s.source==="phone"?"PHONE":"SIM")+" · plot "+(mode==="classic"?"occupied":"only while live")):"Drag-select an army. Phones keep their callsign.";
+  $("uname").textContent=s? (mode==="classic"?"HARNESS AGENT · OWN POD":"ACTOR · SHARED WORKER"):"—";
+  $("ustat").textContent=s? (s.status.toUpperCase()+" · "+(s.source==="phone"?"PHONE":"SIM")+" · "+(mode==="classic"?"owns a pod":"only while awake")):"Select units. Drag LMB. RMB move.";
   $("uhp").textContent=s? ("HP "+s.hp+"/40"):"";
 }
 function paintHud(){
@@ -183,7 +193,7 @@ function paintHud(){
   $("pwn").textContent=units.filter(u=>u.status==="compromised").length;
   $("qtxt").textContent=(queue||0)+" waiting"+(mode==="classic"&&queue?" — You must construct additional pods.":"");
   $("qbar").style.width=Math.min(100, (queue||0)*4)+"%";
-  $("race").textContent=mode==="substrate"?"ZERG / AGENT SUBSTRATE":"TERRAN / CLASSIC K8S";
+  $("race").textContent=mode==="substrate"?"SUBSTRATE · SHARED WORKERS":"CLASSIC · 1 AGENT = 1 POD";
 }
 function syncAgents(list){
   const byId=new Map(units.map(u=>[u.id,u]));
@@ -197,7 +207,7 @@ function syncAgents(list){
     if(u.place==="field" && (fresh || was!=="field" || !u.x)) park(u);
     if(u.status==="compromised") u.hp=0;
     else if(!u.hp) u.hp=40;
-    if(fresh && a.source==="phone") say(a.name+" dropped onto the field.");
+    if(fresh && a.source==="phone") say(a.name+" is on the field.");
     next.push(u);
   });
   units.length=0; units.push(...next);
@@ -212,6 +222,30 @@ function applySnap(s){
   syncAgents(s.agents||[]);
   paintPortrait();
   paintHud();
+}
+function coachBeat(action){
+  if(action==="train"||action==="raid"||action==="wave1"){
+    if(mode==="classic" && queue) say("You must construct additional pods.");
+    else if(mode==="classic") say("Idle agents still own a pod — that's the waste.");
+    else say("Load through agentgateway — the front door for agent traffic.");
+    return;
+  }
+  if(action==="probe"){
+    if(mode==="classic"){
+      const hits=units.filter(u=>u.status==="compromised").length;
+      say(hits?"PWNED — the process was still running.":"Nothing idle to attack.");
+    } else say("Miss — nothing running to attack.");
+    return;
+  }
+  if(action==="flip"){
+    say(mode==="substrate"?"Same nodes. Now idle agents sleep as snapshots — no process.":"Back to classic. One agent still owns one pod.");
+    return;
+  }
+  if(action==="show30") say("30× means more agents per worker by sleeping idle ones — not cheaper tokens.");
+  if(action==="reset") say("Reset. Classic — one agent still owns one pod.");
+  if(action==="idle"||action==="recall"){
+    say(mode==="classic"?"Idle agents still own a pod — that's the waste.":"Sleeping agents are snapshots — no process.");
+  }
 }
 function localAgent(name, source){
   seq+=1;
@@ -233,14 +267,12 @@ async function host(action, extra){
     const body=Object.assign({action}, extra||{});
     const s=await fetch("/api/host",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
     applySnap(s);
-    if(action==="probe") say(mode==="classic"?"Idle processes were still on the pod. PWNED.":"Probe found no process. Burrowed actors are snapshots.");
-    if(action==="flip") say(mode==="substrate"?"Morph complete. Hatchery is the WorkerPool. Burrow is checkpoint/restore.":"Reverted to barracks production.");
-    if(action==="show30") say("Design point. 240 actors / 8 workers. 30× is supply via burrow, not cheaper tokens.");
-    if(action==="reset"){raids.length=0;sel.clear();say("Mission reset. Barracks online.")}
+    if(action==="reset"){raids.length=0;sel.clear()}
+    coachBeat(action);
     return;
   }
   if(action==="train") localAgent();
-  if(action==="raid"){for(let i=0;i<6;i++) localAgent(); raid(16); say("Incoming through the gateway.");}
+  if(action==="raid"){for(let i=0;i<6;i++) localAgent(); raid(16);}
   if(action==="wave1") for(let i=0;i<12;i++) localAgent();
   if(action==="work"){
     const pick=selected();
@@ -262,10 +294,8 @@ async function host(action, extra){
   }
   if(action==="probe"){
     if(mode==="classic"){
-      let hits=0;
-      units.forEach(u=>{if(u.place==="field"&&u.status==="idle"){u.status="compromised";u.hp=0;hits++}});
-      say(hits?"Your units are under attack. Idle processes were still on the pod.":"No idle army standing.");
-    } else say("Probe found no process. Burrowed actors are snapshots.");
+      units.forEach(u=>{if(u.place==="field"&&u.status==="idle"){u.status="compromised";u.hp=0}});
+    }
   }
   if(action==="flip"){
     if(mode==="classic"){
@@ -275,23 +305,21 @@ async function host(action, extra){
         if(i<WORKERS && u.status==="active"){u.place="field";u.status="active";u.node=i%NODES;park(u)}
         else {u.place="vault";u.status="checkpointed";u.node=-1}
       });
-      say("Morph complete. Hatchery is the WorkerPool. Burrow is checkpoint/restore.");
     } else {
       mode="classic";
       units.forEach((u,i)=>{
         if(i<CAP){u.place="field";u.status=u.status==="active"?"active":"idle";u.node=i%NODES;park(u)}
         else {u.place="queue";u.status="queued";u.node=-1;queue++}
       });
-      say("Reverted to barracks production. One unit, one plot.");
     }
   }
   if(action==="show30"){
     mode="substrate";
     while(units.length<240){seq+=1; units.push({id:"X"+seq,name:"batch",source:"sim",status:"checkpointed",place:"vault",node:-1,x:0,y:0,tx:0,ty:0,hp:40})}
     units.slice(0,WORKERS).forEach((u,i)=>{u.place="field";u.status="active";u.node=i%NODES;park(u)});
-    say("Design point. 240 actors / 8 workers. 30× is supply via burrow, not cheaper tokens.");
   }
-  if(action==="reset"){units.length=0;raids.length=0;sel.clear();mode="classic";seq=0;queue=0;metrics={};say("Mission reset. Barracks online.")}
+  if(action==="reset"){units.length=0;raids.length=0;sel.clear();mode="classic";seq=0;queue=0;metrics={}}
+  coachBeat(action);
   paintPortrait(); paintHud();
 }
 function raid(n){const w=canvas.width/devicePixelRatio; for(let i=0;i<n;i++) raids.push({x:40+Math.random()*(w-80),y:-12-i*14,vy:1.2,alive:true})}
@@ -339,11 +367,11 @@ function draw(){
     ctx.fillStyle=mode==="substrate"?"rgba(40,80,50,.55)":"rgba(50,40,16,.65)";
     ctx.fillRect(n.x,n.y,n.w,n.h);
     ctx.strokeStyle=mode==="substrate"?"#3dffc0":"#8a6a30"; ctx.strokeRect(n.x,n.y,n.w,n.h);
-    ctx.fillStyle="#e4c066"; ctx.fillText((mode==="substrate"?"HATCH / WORKER ":"BARRACKS / NODE ")+i, n.x+8,n.y+16);
+    ctx.fillStyle="#e4c066"; ctx.fillText((mode==="substrate"?"NODE · workers ":"NODE · pods ")+i, n.x+8,n.y+16);
   });
   if(mode==="substrate"){
     ctx.setLineDash([5,4]); ctx.strokeStyle="#7a6cff"; ctx.strokeRect(w-200,h-130,184,110); ctx.setLineDash([]);
-    ctx.fillStyle="#c9b8ff"; ctx.fillText("BURROW VAULT "+vault().length+" · NO PROCESS", w-188, h-112);
+    ctx.fillStyle="#c9b8ff"; ctx.fillText("SLEEPING AGENTS "+vault().length+" · no process", w-188, h-112);
     vault().slice(0,48).forEach((u,i)=>{ ctx.fillStyle="#5a4a88"; ctx.fillRect(w-188+(i%12)*14,h-100+Math.floor(i/12)*16,10,10); });
   }
   units.forEach(u=>{
@@ -376,7 +404,7 @@ $("probe").onclick=()=>host("probe");
 $("recall").onclick=()=>host("recall", selectedIds().length?{ids:selectedIds()}:{});
 $("x30").onclick=()=>host("show30");
 $("reset").onclick=()=>host("reset");
-$("enter").onclick=()=>{$("brief").classList.add("hide"); say("Mission online. Train until amber idle is obvious, then scan phones.");};
+$("enter").onclick=()=>{$("brief").classList.add("hide"); say("Add agents, sleep them, then attack idle.");};
 window.onkeydown=e=>{
   const k=e.key.toLowerCase();
   if(k==="a") host("train");
@@ -400,7 +428,7 @@ loop(); paintPortrait(); paintHud();
 (async()=>{
   try{
     const s=await fetch("/api/state").then(r=>r.json());
-    if(s && s.agents){ LIVE=true; applySnap(s); $("brief").classList.add("hide"); setInterval(pull,400); say("Room state live. QR is on the minimap rail."); }
+    if(s && s.agents){ LIVE=true; applySnap(s); $("brief").classList.add("hide"); setInterval(pull,400); say("Room live. Scan the QR — same Wi‑Fi as the projector."); }
   }catch(e){ paintQR(""); }
 })();
 </script>
