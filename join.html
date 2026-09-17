@@ -68,7 +68,16 @@ function paint(agent, m){
 async function pull(){
   if(!me) return;
   const s=await fetch("/api/state").then(r=>r.json());
-  paint(s.agents.find(a=>a.id===me.id), s.mode);
+  const agent=(s.agents||[]).find(a=>a.id===me.id);
+  if(!agent){
+    $("copy").textContent="Session ended on the field. Jack in again.";
+    $("hstat").textContent="OFFLINE";
+    $("pad").style.display="none";
+    $("gate").style.display="block";
+    me=null;
+    return;
+  }
+  paint(agent, s.mode);
 }
 $("go").onclick=async()=>{
   const name=$("name").value.trim()||("op-"+Math.floor(Math.random()*90+10));
@@ -79,6 +88,7 @@ $("go").onclick=async()=>{
 };
 async function act(action){
   const res=await fetch("/api/me",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:me.id,action})}).then(r=>r.json());
+  if(!res.ok){ me=null; $("pad").style.display="none"; $("gate").style.display="block"; $("copy").textContent="Session ended on the field. Jack in again."; return; }
   paint(res.agent,res.mode);
 }
 $("work").onclick=()=>act("work");

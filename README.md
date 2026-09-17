@@ -46,15 +46,14 @@ Local sim only. No phones, no QR.
 
 ## Facilitator click order
 
-1. 20-second briefing on `/` overlay (or `/hud` for PaaS stats). Do not say Vertex as the current name. Do not say free.
-2. Switch projector to the field if you briefed on `/hud`.
-3. **A Add agents** / **G Send load** until idle is obvious (hit **I Sleep** so idle units go gold).
-4. Wave into the supply ceiling. Adjutant: “You must construct additional pods.”
-5. “Scan now” — phones join as classic agents (named triangles).
-6. **P Attack idle** — **PWNED**. Handsets read PWNED — you were still running.
-7. **F Flip to Substrate**. Same nodes, shared workers, sleeping-agent vault. Phones read snapshot.
-8. **P Attack idle** again — miss. Nothing running to attack.
-9. **3 Show 30×** if you need the density punch (more agents per worker by sleeping idle ones, not cheaper tokens).
+1. Room `/` is the field immediately (QR on the rail so phones can join during the talk). Click the adjutant line to reopen the 20-second briefing, or use `/hud` for PaaS stats. Do not say Vertex as the current name. Do not say free.
+2. **A Add agents** / **G Send load** until idle is obvious (hit **I Sleep** so idle units go gold). At gold idle: *idle agents still own a pod — that's the waste, and it's attackable.*
+3. Wave into the supply ceiling. Adjutant: “You must construct additional pods.”
+4. “Scan now” — phones join as classic agents (named triangles).
+5. **P Attack idle** — **PWNED**. Handsets read PWNED — you were still running.
+6. **F Flip to Substrate**. Same nodes, shared workers, sleeping-agent vault. Phones read snapshot.
+7. **P Attack idle** again — miss. Nothing running to attack.
+8. **3 Show 30×** if you need the density punch (more agents per worker by sleeping idle ones, not cheaper tokens).
 
 ## Claims to keep
 

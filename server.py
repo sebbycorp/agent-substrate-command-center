@@ -200,7 +200,10 @@ def host_action(action, ids=None):
         targets = [find(i) for i in ids]
         targets = [t for t in targets if t]
         if not targets:
-            targets = list(STATE["agents"])
+            if verb == "work":
+                targets = [a for a in STATE["agents"] if a["status"] == "idle"]
+            else:
+                targets = [a for a in STATE["agents"] if a.get("place") == "field"]
         for a in targets:
             me_action(a["id"], verb)
     elif action == "flip":

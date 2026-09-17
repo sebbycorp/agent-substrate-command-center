@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
+import subprocess
+import tempfile
 import threading
 import unittest
 import urllib.error
@@ -107,6 +110,23 @@ class RoomLogicTests(unittest.TestCase):
         self.assertEqual(snap["mode"], "substrate")
         self.assertAlmostEqual(snap["metrics"]["density"], 30.0, places=0)
         self.assertEqual(snap["metrics"]["units"], 8)
+
+    def test_work_without_ids_does_not_empty_show30_vault(self):
+        server.host_action("flip")
+        server.host_action("show30")
+        before = len(server.snaps())
+        self.assertGreater(before, 200)
+        server.host_action("work")
+        self.assertGreaterEqual(len(server.snaps()), 200)
+        self.assertEqual(len(server.active()), 8)
+
+    def test_idle_without_ids_only_parks_field_units(self):
+        a = server.add_agent("Ada", "phone")
+        server.host_action("flip")
+        server.me_action(a["id"], "work")
+        self.assertEqual(server.find(a["id"])["status"], "active")
+        server.host_action("idle")
+        self.assertEqual(server.find(a["id"])["status"], "checkpointed")
 
     def test_snapshot_shape(self):
         server.add_agent("Ada", "phone")
@@ -219,12 +239,15 @@ class SurfaceContractTests(unittest.TestCase):
         self.assertIn("Go to sleep", text)
         self.assertIn("/api/state", text)
         self.assertIn("/api/me", text)
+        self.assertIn("Jack in again", text)
 
     def test_hud_can_follow_room_state(self):
         text = ROOT.joinpath("index.html").read_text(encoding="utf-8")
         self.assertIn("/api/state", text)
         self.assertIn("/api/host", text)
         self.assertIn("Pete live-join is not this file", text)
+        self.assertIn('overlay hide', text)
+        self.assertIn("queued", text)
 
     def test_rts_room_copy_is_projector_legible(self):
         text = ROOT.joinpath("rts.html").read_text(encoding="utf-8")
@@ -274,6 +297,21 @@ class SurfaceContractTests(unittest.TestCase):
 
     def test_no_duplicate_starcraft_field_file(self):
         self.assertFalse((ROOT / "sc.html").exists())
+
+    def test_browser_scripts_parse(self):
+        for name in ("rts.html", "index.html", "join.html"):
+            html = ROOT.joinpath(name).read_text(encoding="utf-8")
+            scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)
+            self.assertTrue(scripts, name)
+            for i, script in enumerate(scripts):
+                with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as fh:
+                    fh.write(script)
+                    path = fh.name
+                try:
+                    proc = subprocess.run(["node", "--check", path], capture_output=True, text=True)
+                    self.assertEqual(proc.returncode, 0, f"{name} script {i}: {proc.stderr}")
+                finally:
+                    Path(path).unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
