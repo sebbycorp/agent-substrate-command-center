@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
+import subprocess
+import tempfile
 import threading
 import unittest
 import urllib.error
@@ -222,6 +225,21 @@ class SurfaceContractTests(unittest.TestCase):
 
     def test_no_duplicate_starcraft_field_file(self):
         self.assertFalse((ROOT / "sc.html").exists())
+
+    def test_browser_scripts_parse(self):
+        for name in ("rts.html", "index.html", "join.html"):
+            html = ROOT.joinpath(name).read_text(encoding="utf-8")
+            scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)
+            self.assertTrue(scripts, name)
+            for i, script in enumerate(scripts):
+                with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as fh:
+                    fh.write(script)
+                    path = fh.name
+                try:
+                    proc = subprocess.run(["node", "--check", path], capture_output=True, text=True)
+                    self.assertEqual(proc.returncode, 0, f"{name} script {i}: {proc.stderr}")
+                finally:
+                    Path(path).unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

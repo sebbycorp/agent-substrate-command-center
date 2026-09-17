@@ -266,7 +266,24 @@ function render(){
     else if(!here.length){const c=document.createElement("div");c.className="cell warm";c.innerHTML="<b>gVisor</b><span>warm</span>";sl.appendChild(c)}
     rack.appendChild(sl);root.appendChild(rack);
   }
-  const sb=$("snaps");if(sb){sb.innerHTML="";const s=snaps();if(!s.length)sb.innerHTML="<span class='muted'>Vault empty.</span>";s.slice(0,36).forEach(a=>{const c=document.createElement("div");c.className="cell snap";c.innerHTML=`<b>${a.id}</b><span>snap</span>";sb.appendChild(c)});if(s.length>36){const c=document.createElement("div");c.className="cell snap";c.innerHTML=`<b>+${s.length-36}</b><span>more</span>";sb.appendChild(c)}}
+  const sb=$("snaps");
+  if(sb){
+    sb.innerHTML="";
+    const s=snaps();
+    if(!s.length) sb.innerHTML="<span class='muted'>Vault empty.</span>";
+    s.slice(0,36).forEach(a=>{
+      const c=document.createElement("div");
+      c.className="cell snap";
+      c.innerHTML="<b>"+((a.name||a.id)+"" ).slice(0,8)+"</b><span>snap</span>";
+      sb.appendChild(c);
+    });
+    if(s.length>36){
+      const c=document.createElement("div");
+      c.className="cell snap";
+      c.innerHTML="<b>+"+(s.length-36)+"</b><span>more</span>";
+      sb.appendChild(c);
+    }
+  }
   const ag=S.agents.length, units=S.mode==="classic"?live().length:WORKERS, run=act().length;
   const density=S.mode==="classic"?1:(ag/WORKERS||0);
   const cpu=ag?Math.max(6,Math.min(86,(run/Math.max(units,1))*52+run)):0;
