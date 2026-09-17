@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent Substrate Command Center</title>
+<style>
+  :root {
+    --bg: #07090d;
+    --panel: #10151c;
+    --panel-2: #161d26;
+    --line: #243041;
+    --text: #e8eef6;
+    --muted: #8b97a8;
+    --cyan: #3ee0c5;
+    --cyan-dim: rgba(62, 224, 197, 0.16);
+    --amber: #f5c14a;
+    --amber-dim: rgba(245, 193, 74, 0.16);
+    --red: #ff5d6c;
+    --red-dim: rgba(255, 93, 108, 0.16);
+    --good: #6ee7a8;
+    --idle: #6b7787;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 "IBM Plex Sans", "Segoe UI", sans-serif; }
+  button { font: inherit; }
+  .app { min-height: 100%; display: grid; grid-template-rows: auto auto 1fr auto; }
+  header {
+    display: flex; justify-content: space-between; gap: 16px; align-items: center;
+    padding: 14px 18px; border-bottom: 1px solid var(--line); background: #0b1016;
+  }
+  .brand { display: flex; gap: 12px; align-items: center; }
+  .mark {
+    width: 34px; height: 34px; border: 1px solid var(--cyan); color: var(--cyan);
+    display: grid; place-items: center; font-weight: 700; letter-spacing: 0.04em;
+  }
+  h1 { margin: 0; font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .phase {
+    padding: 8px 12px; border: 1px solid var(--line); background: var(--panel);
+    min-width: 280px;
+  }
+  .phase b { display: block; font-size: 11px; letter-spacing: 0.14em; color: var(--amber); text-transform: uppercase; }
+  .coach {
+    padding: 8px 18px; background: #0e1620; color: var(--muted); font-size: 12px; border-bottom: 1px solid var(--line);
+  }
+  .coach strong { color: var(--text); }
+  main {
+    display: grid; grid-template-columns: 280px 1fr 320px; gap: 12px; padding: 12px;
+  }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); padding: 12px; }
+  .card h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .brief p { margin: 0 0 10px; color: #c5d0dc; }
+  .pill {
+    display: inline-block; margin: 0 6px 6px 0; padding: 3px 7px; border: 1px solid var(--line);
+    font-size: 11px; color: var(--muted);
+  }
+  .cluster { min-height: 420px; }
+  .lane {
+    height: 54px; margin-bottom: 10px; border: 1px dashed var(--line); background: #0b1016;
+    display: flex; align-items: center; gap: 6px; padding: 0 8px; overflow: hidden;
+  }
+  .lane span { font-size: 11px; color: var(--muted); width: 92px; flex: 0 0 auto; }
+  .req {
+    font-size: 11px; padding: 4px 7px; border: 1px solid var(--cyan); color: var(--cyan);
+    background: var(--cyan-dim); white-space: nowrap; animation: slide 1.2s linear;
+  }
+  @keyframes slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .nodes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .node { background: var(--panel-2); border: 1px solid var(--line); padding: 10px; min-height: 150px; }
+  .node header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; color: var(--muted); }
+  .slots { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pod, .actor, .snap {
+    width: 54px; min-height: 44px; border: 1px solid var(--line); font-size: 10px;
+    padding: 4px; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .pod.active, .actor.active { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); }
+  .pod.idle { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); }
+  .pod.compromised, .actor.compromised { border-color: var(--red); background: var(--red-dim); color: var(--red); }
+  .actor.idle { border-color: var(--cyan); opacity: 0.7; }
+  .snap { border-style: dashed; color: var(--idle); }
+  .storage { margin-top: 10px; border: 1px dashed var(--line); padding: 8px; min-height: 64px; }
+  .metrics .row { display: flex; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+  .metric { flex: 1; background: #0b1016; border: 1px solid var(--line); padding: 8px; }
+  .metric b { display: block; font-size: 20px; }
+  .metric span { color: var(--muted); font-size: 11px; }
+  .bar { height: 8px; background: #0b1016; border: 1px solid var(--line); margin: 4px 0 12px; }
+  .bar > i { display: block; height: 100%; background: var(--cyan); width: 0; }
+  .bar.warn > i { background: var(--amber); }
+  .bar.bad > i { background: var(--red); }
+  .log { height: 180px; overflow: auto; background: #0b1016; border: 1px solid var(--line); padding: 8px; font-size: 12px; color: var(--muted); }
+  .log div { margin-bottom: 6px; }
+  footer {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 12px 18px; border-top: 1px solid var(--line); background: #0b1016;
+  }
+  .btn {
+    border: 1px solid var(--cyan); background: transparent; color: var(--cyan);
+    padding: 8px 12px; cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px;
+  }
+  .btn:hover { background: var(--cyan-dim); }
+  .btn.primary { background: var(--cyan); color: #06221c; font-weight: 700; }
+  .btn.warn { border-color: var(--amber); color: var(--amber); }
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .fine { margin-left: auto; color: var(--muted); font-size: 11px; max-width: 420px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="mark">AS</div>
+      <div>
+        <h1>Command Center // Agent Substrate</h1>
+        <div class="sub">Enablement sim · kagent + Agent Substrate + agentgateway · not a live cluster</div>
+      </div>
+    </div>
+    <div class="phase" id="phaseBadge">
+      <b>Phase 1 — Classic Kubernetes</b>
+      <span>One harness agent = one pod. Identity and lifecycle glued to the pod.</span>
+    </div>
+  </header>
+  <div class="coach" id="coach">Play Phase 1 first. Let the wave fill the cluster before you talk. The feeling of waste is the lesson.</div>
+  <main>
+    <aside class="card brief">
+      <h2>The shift</h2>
+      <p id="briefText">Kubernetes was designed for long-lived stateless services. A harness agent is bursty, stateful, and idle most of the time. If each session owns a pod, you pay for the empty room.</p>
+      <div class="pill">Harness agent</div>
+      <div class="pill">Not a microservice</div>
+      <div class="pill">Idle most of the time</div>
+      <h2 style="margin-top:16px">Why teams buy a PaaS</h2>
+      <p>AWS Bedrock AgentCore and Google Gemini Enterprise Agent Platform (formerly Vertex AI Agent Builder) exist because platform teams do not want to host this class of workload themselves.</p>
+      <h2>Idle capacity already paid for</h2>
+      <p>Cast AI 2026 report: average CPU utilization ~8% in 2025; CPU overprovisioning ~69%. Cast AI sells optimization software — disclose that. Direction matches other cluster-waste studies.</p>
+      <p>Accurate frame: marginal compute on capacity you already own can be near zero. Substrate itself, GPU node pools, and ops are still real costs.</p>
+    </aside>
+    <section class="card cluster">
+      <h2>Cluster view · 4 nodes already running</h2>
+      <div class="lane" id="lane"><span>INCOMING SESSIONS</span></div>
+      <div class="nodes" id="nodes"></div>
+      <div class="storage" id="storage" style="display:none">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">OBJECT STORAGE · CHECKPOINTED ACTORS (RAM + FILESYSTEM)</div>
+        <div class="slots" id="snaps"></div>
+      </div>
+    </section>
+    <aside class="card">
+      <h2>Proof meters</h2>
+      <div class="metrics">
+        <div class="row">
+          <div class="metric"><b id="mAgents">0</b><span>Logical agents / actors</span></div>
+          <div class="metric"><b id="mPods">0</b><span id="mPodsLabel">Resident pods</span></div>
+        </div>
+        <div class="row">
+          <div class="metric"><b id="mDensity">1.0×</b><span>Actors per worker</span></div>
+          <div class="metric"><b id="mQueue">0</b><span>Queued sessions</span></div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">CPU utilization</div>
+      <div class="bar" id="cpuBar"><i id="cpuFill"></i></div>
+      <div style="font-size:11px;color:var(--muted)">Reserved capacity (what you pay for)</div>
+      <div class="bar warn" id="resBar"><i id="resFill"></i></div>
+      <div style="font-size:11px;color:var(--muted)">Simulated hourly burn</div>
+      <div class="bar bad" id="costBar"><i id="costFill"></i></div>
+      <div class="row" style="margin-bottom:12px">
+        <div class="metric"><b id="mCpu">0%</b><span>Useful CPU</span></div>
+        <div class="metric"><b id="mCost">$0.00</b><span>Idle + reserved burn</span></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="densityNote">Density assumption is stated at flip time. 30× is actors-per-worker via suspend, not cheaper tokens.</div>
+      <h2>Event log</h2>
+      <div class="log" id="log"></div>
+    </aside>
+  </main>
+  <footer>
+    <button class="btn primary" id="btnWave">Start wave</button>
+    <button class="btn" id="btnFlip">Flip to Substrate</button>
+    <button class="btn danger" id="btnAttack">Attack probe</button>
+    <button class="btn warn" id="btnReset">Reset</button>
+    <div class="fine">Same four nodes in both phases. The flip is the runtime, not more hardware. agentgateway still sits in front of live traffic.</div>
+  </footer>
+</div>
+<script>
+const NODES = 4;
+const SLOTS_PER_NODE = 4;          // classic pod slots
+const CLASSIC_CAP = NODES * SLOTS_PER_NODE; // 16 pods
+const WORKERS = 4;                 // substrate warm workers (1 per node in this sim)
+const TARGET_DENSITY = 30;         // design-point oversubscription
+const HOURLY_POD = 0.12;           // fake $ / reserved pod-hour for the meter
+
+const state = {
+  mode: "classic",
+  ticking: false,
+  timer: null,
+  seq: 0,
+  wave: 0,
+  queue: 0,
+  cost: 0,
+  agents: [], // {id, node, slot, status, kind}
+  compromised: 0,
+};
+
+const $ = (id) => document.getElementById(id);
+
+function log(msg) {
+  const el = $("log");
+  const row = document.createElement("div");
+  row.textContent = clock() + "  " + msg;
+  el.prepend(row);
+}
+function clock() {
+  const d = new Date();
+  return d.toTimeString().slice(0,8);
+}
+function setPhase() {
+  if (state.mode === "classic") {
+    $("phaseBadge").innerHTML = "<b>Phase 1 — Classic Kubernetes</b><span>One harness agent = one pod. Identity and lifecycle glued to the pod.</span>";
+    $("coach").innerHTML = "<strong>Coach:</strong> Let Wave 1 fill the grid. Then fire Wave 2 into the ceiling. Then probe. Talk after they see idle amber pods.";
+    $("briefText").textContent = "With microservices, Kubernetes bound identity, resources, and lifecycle to the pod. That marriage worked for a decade. Harness agents spin up, work, go idle, and may not be the same process next time. Agent-per-pod either overprovisions or breaks the binding.";
+    $("storage").style.display = "none";
+    $("mPodsLabel").textContent = "Resident pods";
+    $("btnFlip").textContent = "Flip to Substrate";
+  } else {
+    $("phaseBadge").innerHTML = "<b>Phase 2 — Agent Substrate</b><span>Actors multiplex onto a WorkerPool. Idle state leaves the pod.</span>";
+    $("coach").innerHTML = "<strong>Coach:</strong> Same nodes. Watch idle agents become snapshots. Density is actors per warm worker via checkpoint/restore. Then probe again.";
+    $("briefText").textContent = "Agent Substrate decouples the actor from the pod. A WorkerPool of warm gVisor workers hosts live actors. Idle actors checkpoint RAM + filesystem to object storage and free the worker. kagent projects SandboxAgent / AgentHarness onto that pool. Live traffic still belongs in front of agentgateway.";
+    $("storage").style.display = "block";
+    $("mPodsLabel").textContent = "Warm workers";
+    $("btnFlip").textContent = "Back to classic";
+  }
+}
+
+function liveAgents() {
+  return state.agents.filter(a => a.status !== "checkpointed");
+}
+function activeAgents() {
+  return state.agents.filter(a => a.status === "active");
+}
+function idleResident() {
+  return state.agents.filter(a => a.status === "idle");
+}
+function snaps() {
+  return state.agents.filter(a => a.status === "checkpointed");
+}
+
+function render() {
+  const nodes = $("nodes");
+  nodes.innerHTML = "";
+  for (let n = 0; n < NODES; n++) {
+    const box = document.createElement("div");
+    box.className = "node";
+    const liveHere = state.agents.filter(a => a.node === n && a.status !== "checkpointed");
+    const title = state.mode === "classic" ? `node-${n} · ${liveHere.length}/${SLOTS_PER_NODE} pods` : `node-${n} · worker ${liveHere.length ? "BUSY" : "WARM"}`;
+    box.innerHTML = `<header><span>${title}</span><span>${state.mode === "classic" ? "Deployment" : "WorkerPool member"}</span></header>`;
+    const slots = document.createElement("div");
+    slots.className = "slots";
+    liveHere.forEach(a => {
+      const d = document.createElement("div");
+      d.className = (state.mode === "classic" ? "pod " : "actor ") + a.status;
+      d.innerHTML = `<b>${a.id}</b><span>${a.status}</span>`;
+      slots.appendChild(d);
+    });
+    if (state.mode === "classic") {
+      const empty = SLOTS_PER_NODE - liveHere.length;
+      for (let i = 0; i < empty; i++) {
+        const d = document.createElement("div");
+        d.className = "pod";
+        d.innerHTML = "<b>—</b><span>empty</span>";
+        slots.appendChild(d);
+      }
+    } else if (!liveHere.length) {
+      const d = document.createElement("div");
+      d.className = "actor";
+      d.style.opacity = ".45";
+      d.innerHTML = "<b>gVisor</b><span>warm</span>";
+      slots.appendChild(d);
+    }
+    box.appendChild(slots);
+    nodes.appendChild(box);
+  }
+
+  const snapBox = $("snaps");
+  if (snapBox) {
+    snapBox.innerHTML = "";
+    snaps().forEach(a => {
+      const d = document.createElement("div");
+      d.className = "snap";
+      d.innerHTML = `<b>${a.id}</b><span>snapshot</span>`;
+      snapBox.appendChild(d);
+    });
+    if (!snaps().length) snapBox.innerHTML = "<span style='color:var(--muted);font-size:12px'>No idle actors checkpointed yet.</span>";
+  }
+
+  const agents = state.agents.length;
+  const pods = state.mode === "classic" ? liveAgents().length : WORKERS;
+  const running = activeAgents().length;
+  const density = state.mode === "classic"
+    ? (liveAgents().length ? (agents / Math.max(liveAgents().length, 1)) : 1)
+    : (agents / WORKERS);
+  const cpu = agents === 0 ? 0 : Math.max(6, Math.min(92, (running / Math.max(pods, 1)) * 70 + running * 2));
+  const reserved = state.mode === "classic"
+    ? (liveAgents().length / CLASSIC_CAP) * 100
+    : (WORKERS / CLASSIC_CAP) * 100 + Math.min(20, running * 2);
+  const costNow = state.mode === "classic"
+    ? liveAgents().length * HOURLY_POD
+    : (WORKERS * HOURLY_POD) + snaps().length * 0.004;
+
+  $("mAgents").textContent = agents;
+  $("mPods").textContent = pods;
+  $("mDensity").textContent = density.toFixed(1) + "×";
+  $("mQueue").textContent = state.queue;
+  $("mCpu").textContent = Math.round(cpu) + "%";
+  $("mCost").textContent = "$" + costNow.toFixed(2);
+  $("cpuFill").style.width = cpu + "%";
+  $("resFill").style.width = Math.min(100, reserved) + "%";
+  $("costFill").style.width = Math.min(100, (costNow / (CLASSIC_CAP * HOURLY_POD)) * 100) + "%";
+  $("densityNote").textContent = state.mode === "classic"
+    ? "Classic density stays near 1× because each idle agent still owns a pod."
+    : "Design point on the kagent blog: ~30× actors per worker via idle suspend/restore. This sim shows the mechanism, not a benchmark.";
+}
+
+function spawnRequestVisual() {
+  const lane = $("lane");
+  const el = document.createElement("div");
+  el.className = "req";
+  el.textContent = "session-" + String(state.seq).padStart(3, "0");
+  lane.appendChild(el);
+  if (lane.children.length > 8) lane.removeChild(lane.children[1]);
+}
+
+function admitOne() {
+  state.seq += 1;
+  spawnRequestVisual();
+  if (state.mode === "classic") {
+    if (liveAgents().length >= CLASSIC_CAP) {
+      state.queue += 1;
+      log("CEILING  session queued — no free pod. Identity cannot leave the pod, so the session waits.");
+      return;
+    }
+    const used = liveAgents().length;
+    const node = Math.floor(used / SLOTS_PER_NODE);
+    state.agents.push({ id: "A" + String(state.seq).padStart(2,"0"), node, status: "active" });
+    log("ADMIT     " + state.agents.at(-1).id + " bound to a pod on node-" + node);
+  } else {
+    const live = liveAgents().length;
+    if (live >= WORKERS) {
+      // multiplex by checkpointing an idle actor if any
+      const victim = idleResident()[0];
+      if (victim) {
+        victim.status = "checkpointed";
+        victim.node = -1;
+        log("CHECKPOINT  " + victim.id + " → object storage. Worker freed.");
+      } else {
+        state.queue += 1;
+        log("POOL BUSY  all workers have live actors. Queue until someone goes idle.");
+        return;
+      }
+    }
+    const busyNodes = new Set(liveAgents().map(a => a.node));
+    let node = 0;
+    for (let i = 0; i < NODES; i++) if (!busyNodes.has(i)) { node = i; break; }
+    state.agents.push({ id: "A" + String(state.seq).padStart(2,"0"), node, status: "active" });
+    log("RESTORE   " + state.agents.at(-1).id + " onto warm gVisor worker node-" + node);
+  }
+}
+
+function drainQueue() {
+  while (state.queue > 0) {
+    const before = state.queue;
+    state.queue -= 1;
+    admitOne();
+    if (state.queue >= before) break; // could not admit
+  }
+}
+
+function idleTick() {
+  activeAgents().forEach(a => {
+    if (Math.random() < 0.35) {
+      if (state.mode === "classic") {
+        a.status = "idle";
+      } else {
+        a.status = "checkpointed";
+        a.node = -1;
+        log("IDLE      " + a.id + " snapshotted. Nothing resident to attack.");
+      }
+    }
+  });
+  if (state.mode === "substrate") drainQueue();
+}
+
+function startWave() {
+  state.wave += 1;
+  const count = state.wave === 1 ? 12 : 24;
+  log("WAVE " + state.wave + "  " + count + " sessions inbound.");
+  let i = 0;
+  const pump = setInterval(() => {
+    admitOne();
+    i += 1;
+    render();
+    if (i >= count) clearInterval(pump);
+  }, 180);
+  if (!state.ticking) {
+    state.ticking = true;
+    state.timer = setInterval(() => {
+      idleTick();
+      if (state.mode === "classic") state.cost += liveAgents().length * 0.002;
+      else state.cost += WORKERS * 0.002;
+      render();
+    }, 900);
+  }
+}
+
+function flip() {
+  if (state.mode === "classic") {
+    state.mode = "substrate";
+    // Convert idle residents into snapshots; keep a few live on workers
+    state.agents.forEach((a, idx) => {
+      if (a.status === "compromised") a.status = "idle";
+      if (idx >= WORKERS || a.status !== "active") {
+        a.status = "checkpointed";
+        a.node = -1;
+      } else {
+        a.node = idx;
+        a.status = "active";
+      }
+    });
+    state.compromised = 0;
+    drainQueue();
+    log("FLIP  Agent Substrate online. WorkerPool=4 warm gVisor workers. Actors multiplex. kagent still owns identity as SandboxAgent / AgentHarness.");
+  } else {
+    state.mode = "classic";
+    // Snapshots must reclaim pods or queue
+    const keep = [];
+    state.queue = 0;
+    state.agents.forEach(a => {
+      if (keep.length < CLASSIC_CAP) {
+        a.status = a.status === "active" ? "active" : "idle";
+        a.node = Math.floor(keep.length / SLOTS_PER_NODE);
+        keep.push(a);
+      } else {
+        state.queue += 1;
+      }
+    });
+    state.agents = keep;
+    log("FLIP  Back to agent-per-pod. Snapshots cannot exist. Extra sessions re-enter the queue.");
+  }
+  setPhase();
+  render();
+}
+
+function attack() {
+  if (state.mode === "classic") {
+    const targets = idleResident();
+    if (!targets.length) {
+      log("PROBE  No idle resident process. Wait for agents to go idle — that is the real surface in Phase 1.");
+      return;
+    }
+    targets.forEach(a => a.status = "compromised");
+    state.compromised = targets.length;
+    log("PROBE  " + targets.length + " idle pods compromised. The process was still running because identity never left the pod.");
+  } else {
+    const live = activeAgents();
+    const parked = snaps().length;
+    log("PROBE  " + parked + " checkpointed actors have no process. Nothing to compromise.");
+    if (live.length) {
+      log("PROBE  " + live.length + " live actors remain inside gVisor. Traffic path: agentgateway → sandbox. Sandbox-alone is isolation; the gateway is the guard.");
+    } else {
+      log("PROBE  Pool is warm but empty. You cannot compromise what is not running.");
+    }
+  }
+  render();
+}
+
+function reset() {
+  clearInterval(state.timer);
+  Object.assign(state, { mode: "classic", ticking: false, timer: null, seq: 0, wave: 0, queue: 0, cost: 0, agents: [], compromised: 0 });
+  $("lane").innerHTML = "<span>INCOMING SESSIONS</span>";
+  $("log").innerHTML = "";
+  setPhase();
+  log("RESET  Four nodes. Zero agents. Classic mode.");
+  render();
+}
+
+$("btnWave").onclick = startWave;
+$("btnFlip").onclick = flip;
+$("btnAttack").onclick = attack;
+$("btnReset").onclick = reset;
+setPhase();
+log("READY  Simulation only. Open this on the big screen. Phase 1 first.");
+render();
+</script>
+</body>
+</html>
